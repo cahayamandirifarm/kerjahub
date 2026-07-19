@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KerjaHub — Offline</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #F5F3EC;
+      color: #1C2321;
+      text-align: center;
+      padding: 24px;
+    }
+    h1 { font-size: 1.5rem; margin: 0; }
+    p { color: #1C232199; max-width: 320px; margin: 0; }
+    button {
+      margin-top: 8px;
+      background: #2F6F4E;
+      color: #F5F3EC;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kerja<span style="color:#B9862B">Hub</span></h1>
+  <p>Kamu sedang offline. Periksa koneksi internet, lalu coba lagi.</p>
+  <button onclick="window.location.reload()">Coba Lagi</button>
+</body>
+</html>
