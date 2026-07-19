@@ -49,7 +49,7 @@ export default function SettingsForm({ initialSettings }: { initialSettings: Set
                   updateLocal(s.key, next);
                   saveValue(s.key, next);
                 }}
-                className={`w-11 h-6 rounded-full transition relative ${s.value === "true" ? "bg-forest" : "bg-line"}`}
+                className={`w-11 h-6 rounded-full transition relative ${s.value === "true" ? "bg-turquoise" : "bg-line"}`}
               >
                 <span
                   className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition ${s.value === "true" ? "left-5" : "left-0.5"}`}
@@ -79,7 +79,7 @@ export default function SettingsForm({ initialSettings }: { initialSettings: Set
               />
             )}
             {savingKey === s.key && <span className="text-xs text-ink/40">menyimpan...</span>}
-            {savedKey === s.key && <span className="text-xs text-forest">tersimpan</span>}
+            {savedKey === s.key && <span className="text-xs text-turquoise">tersimpan</span>}
           </div>
         </div>
       ))}

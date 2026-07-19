@@ -45,8 +45,8 @@ export default function PWAInstall() {
 
   return (
     <div className="fixed bottom-20 md:bottom-6 left-4 right-4 sm:left-6 sm:right-auto sm:w-80 z-50">
-      <div className="card p-4 shadow-lg border-forest/30 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-forest-light flex items-center justify-center text-forest-dark shrink-0">
+      <div className="card p-4 shadow-lg border-turquoise/30 flex items-start gap-3">
+        <div className="w-9 h-9 rounded-full bg-turquoise-light flex items-center justify-center text-turquoise-dark shrink-0">
           <Download size={16} />
         </div>
         <div className="min-w-0 flex-1">

@@ -34,7 +34,7 @@ export default async function AdminTransactionsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-semibold">Transaksi & Komisi</h1>
         <div className="card px-4 py-2 text-sm">
-          Total komisi platform: <span className="font-semibold text-forest">{formatRupiah(totalKomisi)}</span>
+          Total komisi platform: <span className="font-semibold text-turquoise">{formatRupiah(totalKomisi)}</span>
         </div>
       </div>
       <div className="card overflow-x-auto">

@@ -30,7 +30,7 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
       <h1 className="font-display text-2xl font-semibold mb-1">Pembayaran Escrow</h1>
       <p className="text-sm text-ink/60 mb-6">{(escrow as any).jobs?.title}</p>
 
-      <div className="card p-5 bg-forest-dark text-paper mb-4">
+      <div className="card p-5 bg-turquoise-dark text-paper mb-4">
         <p className="text-paper/70 text-sm">Total transfer (termasuk kode unik)</p>
         <p className="font-display text-3xl font-semibold mt-1">{formatRupiah(escrow.total_amount)}</p>
         <p className="text-xs text-paper/60 mt-2">

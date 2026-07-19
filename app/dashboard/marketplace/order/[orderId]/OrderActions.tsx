@@ -145,7 +145,7 @@ export default function OrderActions({
         </form>
       )}
 
-      {status === "selesai" && <div className="card p-4 text-sm text-forest font-semibold">Transaksi selesai.</div>}
+      {status === "selesai" && <div className="card p-4 text-sm text-turquoise font-semibold">Transaksi selesai.</div>}
       {status === "sengketa" && <div className="card p-4 text-sm text-clay font-semibold">Sengketa sedang ditangani admin.</div>}
 
       {!["selesai", "dibatalkan"].includes(status) && (
@@ -170,7 +170,7 @@ export default function OrderActions({
           <a
             href={waLink}
             target="_blank"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-forest"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-turquoise"
           >
             <MessageCircle size={15} /> Diskusi via WhatsApp Admin
           </a>

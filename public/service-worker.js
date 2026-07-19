@@ -1,4 +1,4 @@
-const CACHE_NAME = "kerjahub-cache-v1";
+const CACHE_NAME = "kerjahub-cache-v2-redesign";
 const OFFLINE_URL = "/offline.html";
 
 // Aset dasar yang di-cache saat install (app shell).
@@ -8,7 +8,8 @@ const PRECACHE_ASSETS = [
   "/offline.html",
   "/manifest.json",
   "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  "/icons/icon-512.png",
+  "/icons/icon-maskable-512.png"
 ];
 
 self.addEventListener("install", (event) => {

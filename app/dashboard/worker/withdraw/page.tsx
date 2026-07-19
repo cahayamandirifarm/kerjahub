@@ -106,7 +106,7 @@ export default function WorkerWithdrawPage() {
           </div>
         )}
         {error && <p className="text-sm text-clay">{error}</p>}
-        {message && <p className="text-sm text-forest">{message}</p>}
+        {message && <p className="text-sm text-turquoise">{message}</p>}
         <button type="submit" disabled={loading} className="btn-gold w-full">
           {loading ? "Mengirim..." : "Ajukan Penarikan"}
         </button>
@@ -121,7 +121,7 @@ export default function WorkerWithdrawPage() {
             </div>
             <div className="text-right">
               <p className="font-semibold">{formatRupiah(tx.amount)}</p>
-              <p className={`text-xs ${tx.status === "berhasil" ? "text-forest" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
+              <p className={`text-xs ${tx.status === "berhasil" ? "text-turquoise" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
                 {tx.status}
               </p>
             </div>

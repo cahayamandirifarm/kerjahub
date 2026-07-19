@@ -57,7 +57,7 @@ export default function AdminMarketplaceOrdersPage() {
                 {o.status === "sengketa" ? "Sengketa" : "Menunggu Konfirmasi"}
               </span>
               {o.proof_url && (
-                <a href={o.proof_url} target="_blank" className="block text-xs font-semibold text-forest underline mt-1">
+                <a href={o.proof_url} target="_blank" className="block text-xs font-semibold text-turquoise underline mt-1">
                   Lihat bukti pembayaran
                 </a>
               )}

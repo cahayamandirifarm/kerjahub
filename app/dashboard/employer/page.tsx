@@ -29,7 +29,7 @@ export default async function EmployerDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Dasbor Pemberi Kerja</h1>
-        <Link href="/dashboard/worker" className="text-sm font-semibold text-forest">
+        <Link href="/dashboard/worker" className="text-sm font-semibold text-turquoise">
           Lihat sisi Pencari Kerja &rarr;
         </Link>
       </div>
@@ -71,7 +71,7 @@ export default async function EmployerDashboard() {
         </Link>
       </div>
 
-      <Link href="/dashboard/employer/nearby-workers" className="text-sm font-semibold text-forest inline-flex items-center gap-1">
+      <Link href="/dashboard/employer/nearby-workers" className="text-sm font-semibold text-turquoise inline-flex items-center gap-1">
         <Users size={14} /> Lihat pekerja terdekat
       </Link>
 
@@ -85,7 +85,7 @@ export default async function EmployerDashboard() {
           <div key={job.id} className="card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-forest uppercase">{job.category}</span>
+                <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                 <h3 className="font-semibold text-ink truncate">{job.title}</h3>
                 <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(job.price)}</p>
               </div>
@@ -98,12 +98,12 @@ export default async function EmployerDashboard() {
               <div className="flex gap-2">
                 <Link
                   href={`/dashboard/employer/applicants/${job.id}`}
-                  className="text-sm font-semibold text-forest"
+                  className="text-sm font-semibold text-turquoise"
                 >
                   Kelola pelamar
                 </Link>
                 {job.stage !== "terbuka" && (
-                  <Link href={`/dashboard/job/${job.id}`} className="text-sm font-semibold text-forest">
+                  <Link href={`/dashboard/job/${job.id}`} className="text-sm font-semibold text-turquoise">
                     Lihat progres
                   </Link>
                 )}

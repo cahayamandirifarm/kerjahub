@@ -81,7 +81,7 @@ export default function BankAccountPage() {
             onChange={(e) => setForm((f) => ({ ...f, bank_account_holder: e.target.value }))}
           />
         </div>
-        {message && <p className="text-sm text-forest">{message}</p>}
+        {message && <p className="text-sm text-turquoise">{message}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Menyimpan..." : "Simpan"}
         </button>

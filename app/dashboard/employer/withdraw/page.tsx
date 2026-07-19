@@ -116,13 +116,13 @@ function EmployerWalletContent() {
       <div className="flex gap-2 mb-5">
         <button
           onClick={() => setTab("topup")}
-          className={`flex-1 rounded-full py-2.5 text-sm font-semibold ${tab === "topup" ? "bg-forest text-paper" : "bg-white border border-line text-ink/60"}`}
+          className={`flex-1 rounded-full py-2.5 text-sm font-semibold ${tab === "topup" ? "bg-turquoise text-paper" : "bg-white border border-line text-ink/60"}`}
         >
           Top Up
         </button>
         <button
           onClick={() => setTab("tarik")}
-          className={`flex-1 rounded-full py-2.5 text-sm font-semibold ${tab === "tarik" ? "bg-forest text-paper" : "bg-white border border-line text-ink/60"}`}
+          className={`flex-1 rounded-full py-2.5 text-sm font-semibold ${tab === "tarik" ? "bg-turquoise text-paper" : "bg-white border border-line text-ink/60"}`}
         >
           Tarik Saldo
         </button>
@@ -133,7 +133,7 @@ function EmployerWalletContent() {
           <p className="text-sm text-ink/60">
             Transfer ke rekening BCA 8800112233 a.n. PT KerjaHub Indonesia atau scan QRIS di bawah, lalu unggah bukti pembayaran.
           </p>
-          <div className="bg-forest-light rounded-xl p-4 text-center text-sm text-forest-dark font-medium">
+          <div className="bg-turquoise-light rounded-xl p-4 text-center text-sm text-turquoise-dark font-medium">
             [ Kode QRIS KerjaHub akan tampil di sini ]
           </div>
           <div>
@@ -151,7 +151,7 @@ function EmployerWalletContent() {
             />
           </div>
           {error && <p className="text-sm text-clay">{error}</p>}
-          {message && <p className="text-sm text-forest">{message}</p>}
+          {message && <p className="text-sm text-turquoise">{message}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Mengirim..." : "Ajukan Top Up"}
           </button>
@@ -166,7 +166,7 @@ function EmployerWalletContent() {
             <input className="input" type="number" min={10000} required value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
           {error && <p className="text-sm text-clay">{error}</p>}
-          {message && <p className="text-sm text-forest">{message}</p>}
+          {message && <p className="text-sm text-turquoise">{message}</p>}
           <button type="submit" disabled={loading} className="btn-gold w-full">
             {loading ? "Mengirim..." : "Ajukan Penarikan"}
           </button>
@@ -183,7 +183,7 @@ function EmployerWalletContent() {
             </div>
             <div className="text-right">
               <p className="font-semibold">{formatRupiah(tx.amount)}</p>
-              <p className={`text-xs ${tx.status === "berhasil" ? "text-forest" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
+              <p className={`text-xs ${tx.status === "berhasil" ? "text-turquoise" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
                 {tx.status}
               </p>
             </div>

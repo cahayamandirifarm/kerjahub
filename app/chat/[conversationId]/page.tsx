@@ -72,7 +72,7 @@ export default function ChatPage({ params }: { params: { conversationId: string 
             <div
               key={m.id}
               className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-                m.sender_id === userId ? "bg-forest text-paper ml-auto" : "bg-white border border-line"
+                m.sender_id === userId ? "bg-turquoise text-paper ml-auto" : "bg-white border border-line"
               }`}
             >
               {m.content}

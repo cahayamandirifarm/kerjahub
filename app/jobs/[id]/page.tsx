@@ -23,7 +23,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-semibold text-forest uppercase tracking-wide">
+          <span className="text-xs font-semibold text-turquoise uppercase tracking-wide">
             {job.category}
           </span>
           {isWorkerListing && (
@@ -45,7 +45,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
             <a
               href={`https://www.google.com/maps?q=${job.latitude},${job.longitude}`}
               target="_blank"
-              className="inline-flex items-center gap-1.5 font-semibold text-forest"
+              className="inline-flex items-center gap-1.5 font-semibold text-turquoise"
             >
               <MapPin size={15} /> Lihat Lokasi
             </a>
@@ -73,13 +73,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
         {employer && (
           <div className="card p-5 mt-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-forest-light flex items-center justify-center font-display font-semibold text-forest-dark">
+            <div className="w-11 h-11 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark">
               {employer.full_name?.[0] ?? "?"}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-ink truncate">{employer.full_name}</p>
               {employer.kyc_status === "terverifikasi" && (
-                <p className="text-xs text-forest inline-flex items-center gap-1">
+                <p className="text-xs text-turquoise inline-flex items-center gap-1">
                   <ShieldCheck size={13} /> Identitas terverifikasi
                 </p>
               )}

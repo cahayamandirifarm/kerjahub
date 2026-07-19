@@ -42,7 +42,7 @@ export default async function AdminJobsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {j.is_active ? (
-                    <span className="text-forest font-semibold text-xs">Aktif</span>
+                    <span className="text-turquoise font-semibold text-xs">Aktif</span>
                   ) : (
                     <span className="text-clay font-semibold text-xs">Nonaktif</span>
                   )}

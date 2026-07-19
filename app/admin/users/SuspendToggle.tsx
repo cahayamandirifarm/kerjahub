@@ -23,7 +23,7 @@ export default function SuspendToggle({ userId, isSuspended }: { userId: string;
   }
 
   return (
-    <button onClick={toggle} disabled={loading} className="text-xs font-semibold text-forest">
+    <button onClick={toggle} disabled={loading} className="text-xs font-semibold text-turquoise">
       {isSuspended ? "Aktifkan" : "Tangguhkan"}
     </button>
   );

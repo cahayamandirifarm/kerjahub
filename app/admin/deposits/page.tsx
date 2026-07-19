@@ -27,7 +27,7 @@ export default async function AdminDepositsPage() {
               <p className="font-semibold">{tx.profiles?.full_name}</p>
               <p className="text-lg font-display font-semibold text-gold-dark">{formatRupiah(tx.amount)}</p>
               {tx.proof_url && (
-                <a href={tx.proof_url} target="_blank" className="text-xs font-semibold text-forest underline">
+                <a href={tx.proof_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
                   Lihat bukti pembayaran
                 </a>
               )}

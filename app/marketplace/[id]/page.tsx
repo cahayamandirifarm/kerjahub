@@ -30,7 +30,7 @@ export default async function DigitalListingPage({ params }: { params: { id: str
           ))}
         </div>
 
-        <span className="text-xs font-semibold text-forest uppercase">
+        <span className="text-xs font-semibold text-turquoise uppercase">
           {DIGITAL_CATEGORIES.find((c) => c.value === listing.category)?.label}
         </span>
         <h1 className="font-display text-2xl font-semibold mt-1">{listing.title}</h1>
@@ -43,7 +43,7 @@ export default async function DigitalListingPage({ params }: { params: { id: str
 
         {seller && (
           <div className="card p-4 mt-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-forest-light flex items-center justify-center font-display font-semibold text-forest-dark">
+            <div className="w-10 h-10 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark">
               {seller.full_name?.[0] ?? "?"}
             </div>
             <div>

@@ -26,7 +26,7 @@ export default async function AdminKycPage() {
                 <p className="font-semibold">{p.full_name}</p>
                 <p className="text-sm text-ink/50">{p.phone}</p>
                 {p.kyc_selfie_url && (
-                  <a href={p.kyc_selfie_url} target="_blank" className="text-xs font-semibold text-forest underline">
+                  <a href={p.kyc_selfie_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
                     Lihat selfie ukuran penuh
                   </a>
                 )}

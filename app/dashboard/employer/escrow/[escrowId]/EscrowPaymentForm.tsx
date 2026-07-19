@@ -62,11 +62,11 @@ export default function EscrowPaymentForm({
   return (
     <div className="card p-5">
       <p className="text-sm font-semibold mb-3">
-        Status: <span className="text-forest">{STATUS_LABEL[status] ?? status}</span>
+        Status: <span className="text-turquoise">{STATUS_LABEL[status] ?? status}</span>
       </p>
 
       {proofUrl && (
-        <a href={proofUrl} target="_blank" className="text-sm text-forest underline block mb-3">
+        <a href={proofUrl} target="_blank" className="text-sm text-turquoise underline block mb-3">
           Lihat bukti yang sudah diunggah
         </a>
       )}
@@ -94,7 +94,7 @@ export default function EscrowPaymentForm({
       )}
 
       {status === "berhasil" && (
-        <p className="text-sm text-forest font-semibold">
+        <p className="text-sm text-turquoise font-semibold">
           Dana sudah diamankan platform. Pekerja bisa mulai bekerja sekarang.
         </p>
       )}

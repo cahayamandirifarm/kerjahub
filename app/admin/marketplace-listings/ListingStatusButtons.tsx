@@ -19,7 +19,7 @@ export default function ListingStatusButtons({ listingId, status }: { listingId:
   return (
     <div className="flex gap-2">
       {status !== "aktif" && status !== "terjual" && (
-        <button onClick={() => setStatus("aktif")} disabled={loading} className="text-xs font-semibold text-forest">
+        <button onClick={() => setStatus("aktif")} disabled={loading} className="text-xs font-semibold text-turquoise">
           Aktifkan
         </button>
       )}

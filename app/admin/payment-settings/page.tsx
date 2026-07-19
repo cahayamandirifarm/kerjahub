@@ -103,7 +103,7 @@ export default function AdminPaymentSettingsPage() {
           )}
           <input className="input" type="file" accept="image/*" onChange={(e) => setQrisFile(e.target.files?.[0] || null)} />
         </div>
-        {message && <p className="text-sm text-forest">{message}</p>}
+        {message && <p className="text-sm text-turquoise">{message}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Menyimpan..." : "Simpan Pengaturan"}
         </button>

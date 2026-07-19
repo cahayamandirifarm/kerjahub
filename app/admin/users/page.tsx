@@ -39,7 +39,7 @@ export default async function AdminUsersPage() {
                   {u.is_suspended ? (
                     <span className="text-clay font-semibold">Ditangguhkan</span>
                   ) : (
-                    <span className="text-forest font-semibold">Aktif</span>
+                    <span className="text-turquoise font-semibold">Aktif</span>
                   )}
                 </td>
                 <td className="px-4 py-3">

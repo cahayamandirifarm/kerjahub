@@ -58,7 +58,7 @@ export default function NearbyJobsSection() {
   return (
     <section className="max-w-5xl mx-auto px-4 mb-8">
       <div className="flex items-center gap-2 mb-4">
-        <Navigation size={16} className="text-forest" />
+        <Navigation size={16} className="text-turquoise" />
         <h2 className="font-display text-lg font-semibold">Pekerjaan Terdekat</h2>
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
@@ -66,13 +66,13 @@ export default function NearbyJobsSection() {
           <Link key={job.id} href={`/jobs/${job.id}`} className="card block p-4 hover:-translate-y-0.5 transition">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-forest uppercase">{job.category}</span>
+                <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                 <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">{job.title}</h3>
               </div>
               <span className="badge-stage stage-terbuka shrink-0">Terdekat</span>
             </div>
             <div className="mt-2 flex items-center gap-3 text-sm text-ink/60">
-              <span className="inline-flex items-center gap-1 font-semibold text-forest">
+              <span className="inline-flex items-center gap-1 font-semibold text-turquoise">
                 <MapPin size={13} /> {formatDistance(job.distance_m, unit)}
               </span>
               {job.district && <span>{job.district}</span>}

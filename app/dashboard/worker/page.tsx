@@ -35,7 +35,7 @@ export default async function WorkerDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Dasbor Pencari Kerja</h1>
-        <Link href="/dashboard/employer" className="text-sm font-semibold text-forest">
+        <Link href="/dashboard/employer" className="text-sm font-semibold text-turquoise">
           Lihat sisi Pemberi Kerja &rarr;
         </Link>
       </div>
@@ -90,7 +90,7 @@ export default async function WorkerDashboard() {
         <>
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Tawaran Jasa Saya</h2>
-            <Link href="/dashboard/worker/post-listing" className="inline-flex items-center gap-1 text-sm font-semibold text-forest">
+            <Link href="/dashboard/worker/post-listing" className="inline-flex items-center gap-1 text-sm font-semibold text-turquoise">
               <Plus size={14} /> Pasang lagi
             </Link>
           </div>
@@ -99,7 +99,7 @@ export default async function WorkerDashboard() {
               <div key={job.id} className="card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="text-xs font-semibold text-forest uppercase">{job.category}</span>
+                    <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                     <h3 className="font-semibold text-ink truncate">{job.title}</h3>
                     <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(job.price)}</p>
                   </div>
@@ -107,7 +107,7 @@ export default async function WorkerDashboard() {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-sm text-ink/60">{job.applications?.[0]?.count ?? 0} yang tertarik</span>
-                  <Link href={`/dashboard/employer/applicants/${job.id}`} className="text-sm font-semibold text-forest">
+                  <Link href={`/dashboard/employer/applicants/${job.id}`} className="text-sm font-semibold text-turquoise">
                     Kelola
                   </Link>
                 </div>
@@ -119,7 +119,7 @@ export default async function WorkerDashboard() {
 
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">Lamaran Saya</h2>
-        <Link href="/dashboard/worker/history" className="inline-flex items-center gap-1 text-sm font-semibold text-forest">
+        <Link href="/dashboard/worker/history" className="inline-flex items-center gap-1 text-sm font-semibold text-turquoise">
           <History size={14} /> Riwayat lengkap
         </Link>
       </div>
@@ -134,7 +134,7 @@ export default async function WorkerDashboard() {
           <div key={app.id} className="card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-forest uppercase">{app.jobs?.category}</span>
+                <span className="text-xs font-semibold text-turquoise uppercase">{app.jobs?.category}</span>
                 <h3 className="font-semibold text-ink truncate">{app.jobs?.title}</h3>
                 <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(app.jobs?.price)}</p>
               </div>
@@ -144,7 +144,7 @@ export default async function WorkerDashboard() {
               <Briefcase size={12} /> Status lamaran: {app.status}
             </p>
             {app.status === "diterima" && (
-              <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 text-sm font-semibold text-forest">
+              <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 text-sm font-semibold text-turquoise">
                 Lihat progres pekerjaan &rarr;
               </Link>
             )}

@@ -39,7 +39,7 @@ export default async function WorkerHistoryPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold mb-1">Riwayat Pekerjaan</h1>
         <p className="text-sm text-ink/60">
-          Total upah diterima: <span className="font-semibold text-forest">{formatRupiah(totalEarnings)}</span>
+          Total upah diterima: <span className="font-semibold text-turquoise">{formatRupiah(totalEarnings)}</span>
         </p>
       </div>
 
@@ -57,14 +57,14 @@ export default async function WorkerHistoryPage() {
               <StatusBadge stage={app.jobs?.stage} />
             </div>
             {app.status === "diterima" && (
-              <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 mr-4 text-sm font-semibold text-forest">
+              <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 mr-4 text-sm font-semibold text-turquoise">
                 Progres pekerjaan
               </Link>
             )}
             {app.status === "diterima" && (
               <Link
                 href={`/chat/${conversations?.find((c) => c.job_id === app.job_id)?.id ?? ""}`}
-                className="inline-block mt-2 text-sm font-semibold text-forest"
+                className="inline-block mt-2 text-sm font-semibold text-turquoise"
               >
                 Buka Chat
               </Link>

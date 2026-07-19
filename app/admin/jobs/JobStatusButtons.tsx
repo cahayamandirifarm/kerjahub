@@ -25,7 +25,7 @@ export default function JobStatusButtons({ jobId, isActive }: { jobId: string; i
 
   return (
     <div className="flex gap-2">
-      <button onClick={toggleActive} disabled={loading} className="text-xs font-semibold text-forest">
+      <button onClick={toggleActive} disabled={loading} className="text-xs font-semibold text-turquoise">
         {isActive ? "Nonaktifkan" : "Aktifkan"}
       </button>
       <button onClick={deletePermanent} disabled={loading} className="text-xs font-semibold text-clay">

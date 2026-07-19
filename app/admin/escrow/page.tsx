@@ -30,7 +30,7 @@ export default async function AdminEscrowPage() {
                 Nilai kerja {formatRupiah(e.base_amount)} + kode unik {e.unique_code}
               </p>
               {e.proof_url && (
-                <a href={e.proof_url} target="_blank" className="text-xs font-semibold text-forest underline">
+                <a href={e.proof_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
                   Lihat bukti transfer
                 </a>
               )}

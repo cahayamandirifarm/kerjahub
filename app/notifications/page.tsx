@@ -34,7 +34,7 @@ export default async function NotificationsPage() {
             <Link
               key={n.id}
               href={n.link || "#"}
-              className={`card p-4 block ${!n.is_read ? "border-forest/40 bg-forest-light/40" : ""}`}
+              className={`card p-4 block ${!n.is_read ? "border-turquoise/40 bg-turquoise-light/40" : ""}`}
             >
               <p className="font-semibold text-ink">{n.title}</p>
               {n.body && <p className="text-sm text-ink/60 mt-0.5">{n.body}</p>}

@@ -5,30 +5,40 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#F5F3EC",
-        ink: "#1C2321",
-        forest: {
-          DEFAULT: "#2F6F4E",
-          dark: "#1F4D36",
-          light: "#E4EFE8"
+        paper: "#F7FCFD",
+        ink: "#173042",
+        turquoise: {
+          DEFAULT: "#32C7D2",
+          dark: "#1CB5C9",
+          mid: "#27C3CF",
+          light: "#E6F9FB"
         },
         gold: {
-          DEFAULT: "#D9A441",
-          dark: "#B9862B",
-          light: "#FBF0DC"
+          DEFAULT: "#FFD233",
+          dark: "#E6B800",
+          light: "#FFF6D9"
         },
-        clay: "#C0392B",
-        line: "#DEDACD"
+        clay: "#E5484D",
+        line: "#DCEEF1"
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "serif"],
-        body: ["var(--font-jakarta)", "sans-serif"]
+        display: ["var(--font-poppins)", "sans-serif"],
+        body: ["var(--font-poppins)", "sans-serif"]
+      },
+      backgroundImage: {
+        brand: "linear-gradient(135deg, #32C7D2, #27C3CF, #1CB5C9)"
       },
       borderRadius: {
-        card: "1.1rem"
+        card: "1.25rem",
+        pill: "999px"
       },
       boxShadow: {
-        card: "0 1px 2px rgba(28,35,33,0.06), 0 8px 24px -12px rgba(28,35,33,0.12)"
+        card: "0 1px 2px rgba(23,48,66,0.05), 0 12px 28px -14px rgba(23,48,66,0.16)",
+        soft: "0 8px 24px -10px rgba(28,167,190,0.28)",
+        glow: "0 0 0 4px rgba(50,199,210,0.12)"
+      },
+      backdropBlur: {
+        glass: "16px"
       }
     }
   },

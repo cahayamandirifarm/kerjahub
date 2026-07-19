@@ -75,18 +75,18 @@ export default function NearbyWorkersPage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-ink">{w.full_name}</p>
-                  {w.is_online && <span className="w-2 h-2 rounded-full bg-forest" />}
+                  {w.is_online && <span className="w-2 h-2 rounded-full bg-turquoise" />}
                 </div>
                 <p className="text-xs text-ink/50">{w.district || w.city || "Lokasi tidak diketahui"}</p>
               </div>
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-forest shrink-0">
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-turquoise shrink-0">
                 <MapPin size={13} /> {formatDistance(w.distance_m)}
               </span>
             </div>
             {w.skills && w.skills.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {w.skills.map((s) => (
-                  <span key={s} className="text-xs bg-forest-light text-forest-dark rounded-full px-2 py-1">
+                  <span key={s} className="text-xs bg-turquoise-light text-turquoise-dark rounded-full px-2 py-1">
                     {s}
                   </span>
                 ))}

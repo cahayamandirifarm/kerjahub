@@ -139,7 +139,7 @@ export default function PostWorkerListingPage() {
             <button
               type="button"
               onClick={useMyLocation}
-              className="text-xs font-semibold text-forest mt-1.5"
+              className="text-xs font-semibold text-turquoise mt-1.5"
             >
               {locLoading ? "Mengambil lokasi..." : coords ? "Lokasi GPS tersimpan ✓" : "Gunakan lokasi GPS saya saat ini"}
             </button>

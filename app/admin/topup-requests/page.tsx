@@ -74,13 +74,13 @@ export default function AdminTopupRequestsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setFilter("pending")}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full ${filter === "pending" ? "bg-forest text-paper" : "bg-white border border-line"}`}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full ${filter === "pending" ? "bg-turquoise text-paper" : "bg-white border border-line"}`}
           >
             Menunggu
           </button>
           <button
             onClick={() => setFilter("all")}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full ${filter === "all" ? "bg-forest text-paper" : "bg-white border border-line"}`}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full ${filter === "all" ? "bg-turquoise text-paper" : "bg-white border border-line"}`}
           >
             Semua
           </button>
@@ -102,7 +102,7 @@ export default function AdminTopupRequestsPage() {
               <p className="font-display text-lg font-semibold text-gold-dark">{formatRupiah(r.amount_final)}</p>
               <p className="text-xs text-ink/40">Metode: {r.payment_method}</p>
               {r.proof_url && (
-                <a href={r.proof_url} target="_blank" className="text-xs font-semibold text-forest underline">
+                <a href={r.proof_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
                   Lihat bukti
                 </a>
               )}

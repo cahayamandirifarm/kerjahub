@@ -60,7 +60,7 @@ export default function BannerList({ initialBanners }: { initialBanners: Banner[
             </button>
             <button
               onClick={() => toggleActive(b.id, b.is_active)}
-              className={`w-10 h-5.5 rounded-full transition relative ${b.is_active ? "bg-forest" : "bg-line"}`}
+              className={`w-10 h-5.5 rounded-full transition relative ${b.is_active ? "bg-turquoise" : "bg-line"}`}
               style={{ width: 40, height: 22 }}
             >
               <span

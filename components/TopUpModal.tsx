@@ -115,7 +115,7 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
                 </p>
                 <button
                   onClick={() => copyText(String(request.amount_final), "amount")}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest mt-2"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-turquoise mt-2"
                 >
                   {copied === "amount" ? <Check size={14} /> : <Copy size={14} />}
                   {copied === "amount" ? "Tersalin!" : "Salin Nominal"}
@@ -132,7 +132,7 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
                 <p className="text-sm text-ink/50">a.n {settings.account_holder}</p>
                 <button
                   onClick={() => copyText(settings.account_number, "account")}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest mt-2"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-turquoise mt-2"
                 >
                   {copied === "account" ? <Check size={14} /> : <Copy size={14} />}
                   {copied === "account" ? "Tersalin!" : "Salin Nomor Rekening"}
@@ -159,7 +159,7 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
 
           {step === "done" && (
             <div className="text-center py-6">
-              <Check className="mx-auto text-forest mb-3" size={40} />
+              <Check className="mx-auto text-turquoise mb-3" size={40} />
               <p className="font-semibold text-ink">
                 Permintaan top up berhasil dikirim dan menunggu verifikasi admin.
               </p>

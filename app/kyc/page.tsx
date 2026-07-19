@@ -92,7 +92,7 @@ export default function KycPage() {
       <Navbar />
       <div className="max-w-md mx-auto px-4 py-8">
         <h1 className="font-display text-2xl font-semibold mb-1">Akun & Verifikasi</h1>
-        <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-forest mb-6">
+        <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-turquoise mb-6">
           <ShieldCheck size={15} /> Status: {statusLabel[profile?.kyc_status || "belum"]}
         </p>
 
@@ -113,7 +113,7 @@ export default function KycPage() {
             <input className="input" type="file" accept="image/*" capture="user" onChange={(e) => setSelfieFile(e.target.files?.[0] || null)} />
             <p className="text-xs text-ink/40 mt-1">Cukup 1 foto selfie wajah yang jelas, tanpa perlu unggah KTP.</p>
           </div>
-          {message && <p className="text-sm text-forest">{message}</p>}
+          {message && <p className="text-sm text-turquoise">{message}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Menyimpan..." : "Kirim Verifikasi"}
           </button>
@@ -126,7 +126,7 @@ export default function KycPage() {
           </div>
           <button
             onClick={toggleSound}
-            className={`w-11 h-6 rounded-full transition relative ${profile?.notif_sound_enabled ? "bg-forest" : "bg-line"}`}
+            className={`w-11 h-6 rounded-full transition relative ${profile?.notif_sound_enabled ? "bg-turquoise" : "bg-line"}`}
           >
             <span
               className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition ${profile?.notif_sound_enabled ? "left-5" : "left-0.5"}`}

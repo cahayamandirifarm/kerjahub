@@ -34,13 +34,13 @@ export default async function ApplicantsPage({ params }: { params: { jobId: stri
         {applications?.map((app: any) => (
           <div key={app.id} className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-forest-light flex items-center justify-center font-display font-semibold text-forest-dark shrink-0">
+              <div className="w-10 h-10 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark shrink-0">
                 {app.profiles?.full_name?.[0] ?? "?"}
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-ink truncate">{app.profiles?.full_name}</p>
                 {app.profiles?.kyc_status === "terverifikasi" && (
-                  <p className="text-xs text-forest">Identitas terverifikasi</p>
+                  <p className="text-xs text-turquoise">Identitas terverifikasi</p>
                 )}
               </div>
             </div>
@@ -48,7 +48,7 @@ export default async function ApplicantsPage({ params }: { params: { jobId: stri
             {app.profiles?.skills && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {app.profiles.skills.map((s: string) => (
-                  <span key={s} className="text-xs bg-forest-light text-forest-dark rounded-full px-2 py-1">
+                  <span key={s} className="text-xs bg-turquoise-light text-turquoise-dark rounded-full px-2 py-1">
                     {s}
                   </span>
                 ))}
@@ -61,12 +61,12 @@ export default async function ApplicantsPage({ params }: { params: { jobId: stri
               )}
               {app.status === "diterima" && (
                 <div className="flex gap-3">
-                  <Link href={`/dashboard/job/${params.jobId}`} className="text-sm font-semibold text-forest">
+                  <Link href={`/dashboard/job/${params.jobId}`} className="text-sm font-semibold text-turquoise">
                     Progres
                   </Link>
                   <Link
                     href={`/chat/${conversations?.find((c) => c.worker_id === app.worker_id)?.id ?? ""}`}
-                    className="text-sm font-semibold text-forest"
+                    className="text-sm font-semibold text-turquoise"
                   >
                     Buka Chat
                   </Link>

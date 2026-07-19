@@ -36,7 +36,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-paper">
       <div className="card w-full max-w-sm p-8">
-        <Link href="/" className="font-display text-2xl font-semibold text-forest-dark block text-center">
+        <Link href="/" className="font-display text-2xl font-semibold text-turquoise-dark block text-center">
           Kerja<span className="text-gold-dark">Hub</span>
         </Link>
         <h1 className="font-display text-xl font-semibold mt-6 mb-2 text-center">Masuk ke Akun</h1>
@@ -75,7 +75,7 @@ function LoginForm() {
 
         <p className="text-sm text-ink/60 mt-6 text-center">
           Belum punya akun?{" "}
-          <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-forest font-semibold">
+          <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-turquoise font-semibold">
             Daftar di sini
           </Link>
         </p>

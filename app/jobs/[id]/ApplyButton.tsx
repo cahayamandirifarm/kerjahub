@@ -62,7 +62,7 @@ export default function ApplyButton({
 
   if (done) {
     return (
-      <div className="card p-4 text-center text-forest font-semibold">
+      <div className="card p-4 text-center text-turquoise font-semibold">
         {isWorkerListing
           ? "Ajakan kerja sama terkirim! Pekerja akan dihubungi lewat notifikasi."
           : "Lamaran terkirim! Pemberi kerja akan dihubungi lewat notifikasi."}
