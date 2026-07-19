@@ -79,12 +79,7 @@ function LoginForm() {
             Daftar di sini
           </Link>
         </p>
-<<<<<<< HEAD
-=======
-        <p className="text-xs text-ink/40 mt-4 text-center">
-          Panel admin? <Link href="/admin-login" className="text-forest font-semibold">Masuk di sini</Link>
-        </p>
->>>>>>> origin/main
+
       </div>
     </div>
   );

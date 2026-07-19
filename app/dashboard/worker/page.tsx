@@ -2,11 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
-<<<<<<< HEAD
 import { Wallet, ArrowDownToLine, Landmark, History, Briefcase, Plus } from "lucide-react";
-=======
-import { Wallet, ArrowDownToLine, Landmark, History, Briefcase } from "lucide-react";
->>>>>>> origin/main
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -28,7 +24,6 @@ export default async function WorkerDashboard() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-<<<<<<< HEAD
   const { data: myListings } = await supabase
     .from("jobs")
     .select("*, applications(count)")
@@ -36,8 +31,6 @@ export default async function WorkerDashboard() {
     .eq("posted_by_role", "worker")
     .order("created_at", { ascending: false });
 
-=======
->>>>>>> origin/main
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -47,7 +40,6 @@ export default async function WorkerDashboard() {
         </Link>
       </div>
 
-<<<<<<< HEAD
       <div className="card p-5" style={{ backgroundColor: "#0f172a" }}>
         <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
           <Wallet size={16} /> Saldo Dompet
@@ -61,34 +53,18 @@ export default async function WorkerDashboard() {
             className="btn-gold !px-4 !py-2 text-sm gap-1"
             style={{ color: "#1C2321" }}
           >
-=======
-      <div className="card p-5 bg-[#0f172a] text-white">
-        <div className="flex items-center gap-2 text-white/70 text-sm">
-          <Wallet size={16} /> Saldo Dompet
-        </div>
-        <p className="font-display font-bold mt-1 tracking-tight text-white" style={{ fontSize: 32 }}>
-          {formatRupiah(profile?.wallet_balance)}
-        </p>
-        <div className="flex gap-3 mt-4">
-          <Link href="/dashboard/worker/withdraw" className="btn-gold !px-4 !py-2 text-sm gap-1">
->>>>>>> origin/main
             <ArrowDownToLine size={16} /> Tarik Saldo
           </Link>
           <Link
             href="/dashboard/worker/bank"
-<<<<<<< HEAD
             className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
             style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
-=======
-            className="bg-white/10 text-white border border-white/30 rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
->>>>>>> origin/main
           >
             <Landmark size={16} /> Rekening Bank
           </Link>
         </div>
       </div>
 
-<<<<<<< HEAD
       <Link href="/dashboard/worker/post-listing" className="card p-4 flex items-center justify-between gap-3 hover:-translate-y-0.5 transition">
         <div>
           <p className="font-semibold text-ink">Pasang Mencari Kerja</p>
@@ -99,8 +75,6 @@ export default async function WorkerDashboard() {
         </span>
       </Link>
 
-=======
->>>>>>> origin/main
       {profile?.kyc_status !== "terverifikasi" && (
         <div className="card p-4 border-gold/40 bg-gold-light flex items-center justify-between gap-3">
           <p className="text-sm text-ink/70">
@@ -112,7 +86,6 @@ export default async function WorkerDashboard() {
         </div>
       )}
 
-<<<<<<< HEAD
       {myListings && myListings.length > 0 && (
         <>
           <div className="flex items-center justify-between">
@@ -144,8 +117,6 @@ export default async function WorkerDashboard() {
         </>
       )}
 
-=======
->>>>>>> origin/main
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">Lamaran Saya</h2>
         <Link href="/dashboard/worker/history" className="inline-flex items-center gap-1 text-sm font-semibold text-forest">

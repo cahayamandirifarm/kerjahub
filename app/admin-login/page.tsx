@@ -50,12 +50,7 @@ export default function AdminLoginPage() {
             {loading ? "Masuk..." : "Masuk sebagai Admin"}
           </button>
         </form>
-<<<<<<< HEAD
-=======
-        <p className="text-xs text-ink/40 mt-6">
-          Demo: admin@kerjahub.demo / Demo1234!
-        </p>
->>>>>>> origin/main
+
       </div>
     </div>
   );
