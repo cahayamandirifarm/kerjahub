@@ -15,6 +15,7 @@ export default function JobCard({ job }: { job: Job }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
+<<<<<<< HEAD
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-semibold text-forest uppercase tracking-wide">
               {job.category}
@@ -23,6 +24,11 @@ export default function JobCard({ job }: { job: Job }) {
               <span className="badge-stage bg-gold-light text-gold-dark text-[10px]">Menawarkan Jasa</span>
             )}
           </div>
+=======
+          <span className="text-xs font-semibold text-forest uppercase tracking-wide">
+            {job.category}
+          </span>
+>>>>>>> origin/main
           <h3 className="font-display text-lg font-semibold text-ink mt-0.5 leading-snug line-clamp-2">
             {job.title}
           </h3>

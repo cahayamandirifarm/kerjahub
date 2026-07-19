@@ -52,7 +52,10 @@ export default function PostJobPage() {
     setLoading(true);
     const { error: insertError } = await supabase.from("jobs").insert({
       employer_id: user.id,
+<<<<<<< HEAD
       posted_by_role: "employer",
+=======
+>>>>>>> origin/main
       title: form.title,
       category: form.category,
       description: form.description,

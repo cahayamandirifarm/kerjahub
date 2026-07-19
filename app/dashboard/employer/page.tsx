@@ -22,7 +22,10 @@ export default async function EmployerDashboard() {
     .from("jobs")
     .select("*, applications(count)")
     .eq("employer_id", user.id)
+<<<<<<< HEAD
     .eq("posted_by_role", "employer")
+=======
+>>>>>>> origin/main
     .order("created_at", { ascending: false });
 
   return (
@@ -34,6 +37,7 @@ export default async function EmployerDashboard() {
         </Link>
       </div>
 
+<<<<<<< HEAD
       <div className="card p-5" style={{ backgroundColor: "#0f172a" }}>
         <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
           <Wallet size={16} /> Saldo Dompet
@@ -47,6 +51,20 @@ export default async function EmployerDashboard() {
             href="/dashboard/employer/withdraw?tab=tarik"
             className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
             style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
+=======
+      <div className="card p-5 bg-[#0f172a] text-white">
+        <div className="flex items-center gap-2 text-white/70 text-sm">
+          <Wallet size={16} /> Saldo Dompet
+        </div>
+        <p className="font-display font-bold mt-1 tracking-tight text-white" style={{ fontSize: 32 }}>
+          {formatRupiah(profile?.wallet_balance)}
+        </p>
+        <div className="flex gap-3 mt-4">
+          <TopUpButton />
+          <Link
+            href="/dashboard/employer/withdraw?tab=tarik"
+            className="bg-white/10 text-white border border-white/30 rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
+>>>>>>> origin/main
           >
             <ArrowDownToLine size={16} /> Tarik Saldo
           </Link>

@@ -49,7 +49,10 @@ export interface Profile {
 export interface Job {
   id: string;
   employer_id: string;
+<<<<<<< HEAD
   posted_by_role: "employer" | "worker";
+=======
+>>>>>>> origin/main
   title: string;
   category: string;
   description: string;

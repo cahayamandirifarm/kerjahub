@@ -16,12 +16,16 @@ export default async function JobDetailPage({ params }: { params: { id: string }
   if (!job) notFound();
 
   const employer = (job as any).profiles;
+<<<<<<< HEAD
   const isWorkerListing = job.posted_by_role === "worker";
+=======
+>>>>>>> origin/main
 
   return (
     <div className="min-h-screen pb-16">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
+<<<<<<< HEAD
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-semibold text-forest uppercase tracking-wide">
             {job.category}
@@ -30,6 +34,11 @@ export default async function JobDetailPage({ params }: { params: { id: string }
             <span className="badge-stage bg-gold-light text-gold-dark text-[10px]">Menawarkan Jasa</span>
           )}
         </div>
+=======
+        <span className="text-xs font-semibold text-forest uppercase tracking-wide">
+          {job.category}
+        </span>
+>>>>>>> origin/main
         <div className="flex items-start justify-between gap-3 mt-1">
           <h1 className="font-display text-2xl md:text-3xl font-semibold text-ink leading-snug">
             {job.title}
@@ -60,9 +69,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
             {formatRupiah(job.price)}
           </span>
           <p className="text-sm text-ink/50 mt-1">
+<<<<<<< HEAD
             {isWorkerListing
               ? "Dana sudah aman ditahan platform begitu kerja sama disepakati — cair setelah pekerjaan selesai."
               : "Dana sudah aman ditahan platform begitu pekerja diterima — cair setelah pekerjaan selesai."}
+=======
+            Dana sudah aman ditahan platform begitu pekerja diterima — cair setelah pekerjaan selesai.
+>>>>>>> origin/main
           </p>
         </div>
 
@@ -88,7 +101,11 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         )}
 
         <div className="mt-6">
+<<<<<<< HEAD
           <ApplyButton jobId={job.id} jobStage={job.stage} isWorkerListing={isWorkerListing} />
+=======
+          <ApplyButton jobId={job.id} jobStage={job.stage} />
+>>>>>>> origin/main
         </div>
       </div>
     </div>

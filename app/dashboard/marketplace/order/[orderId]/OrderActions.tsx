@@ -103,6 +103,7 @@ export default function OrderActions({
     <div className="space-y-4">
       {status === "menunggu_pembayaran" && isBuyer && bankAccount && (
         <form onSubmit={handlePayment} className="card p-5 space-y-3">
+<<<<<<< HEAD
           <p className="text-sm font-semibold text-ink">Metode Pembayaran</p>
           <p className="text-sm text-ink/60">
             Transfer ke <b>{bankAccount.bank_name}</b> {bankAccount.account_number} a.n {bankAccount.account_holder}
@@ -114,6 +115,11 @@ export default function OrderActions({
             </div>
           )}
           <label className="label !mb-0">Unggah Bukti Transfer / QRIS</label>
+=======
+          <p className="text-sm text-ink/60">
+            Transfer ke <b>{bankAccount.bank_name}</b> {bankAccount.account_number} a.n {bankAccount.account_holder}
+          </p>
+>>>>>>> origin/main
           <input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
