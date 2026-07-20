@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { X, Copy, Check, QrCode } from "lucide-react";
+import { X, Copy, Check, QrCode, Upload, MessageCircle } from "lucide-react";
+import { ADMIN_WHATSAPP_NUMBER } from "@/lib/types";
 
 interface PaymentSettings {
   bank_name: string;
@@ -23,6 +24,8 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<"amount" | "account" | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -58,9 +61,41 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
 
   async function handleAlreadyTransferred() {
     if (!request) return;
+    if (!proofFile) {
+      setProofError("Unggah bukti transfer/pembayaran dulu sebelum konfirmasi.");
+      return;
+    }
+    setProofError(null);
     setLoading(true);
-    await supabase.rpc("mark_topup_transferred", { p_request_id: request.id });
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      setProofError("Sesi login tidak ditemukan, silakan login ulang.");
+      return;
+    }
+
+    const path = `${user.id}/topup-${request.id}-${Date.now()}-${proofFile.name}`;
+    const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(path, proofFile);
+    if (uploadError) {
+      setLoading(false);
+      setProofError("Gagal mengunggah bukti transfer: " + uploadError.message);
+      return;
+    }
+    const { data: signedData } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60 * 60 * 24 * 365);
+    const proofUrl = signedData?.signedUrl ?? null;
+
+    const { error: rpcError } = await supabase.rpc("mark_topup_transferred", {
+      p_request_id: request.id,
+      p_proof_url: proofUrl
+    });
     setLoading(false);
+    if (rpcError) {
+      setProofError("Gagal mengirim konfirmasi: " + rpcError.message);
+      return;
+    }
     setStep("done");
   }
 
@@ -71,6 +106,14 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
   }
 
   const hasBankTransfer = Boolean(settings?.bank_name?.trim() && settings?.account_number?.trim());
+
+  const waLink = request
+    ? `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        `Halo admin, saya sudah transfer top up saldo sebesar ${formatRupiah(
+          request.amount_final
+        )} (kode unik ${request.unique_code}), ID permintaan ${request.id.slice(0, 8)}. Mohon dicek dan dikonfirmasi ya. Terima kasih.`
+      )}`
+    : `https://wa.me/${ADMIN_WHATSAPP_NUMBER}`;
 
   return (
     <div className="fixed inset-0 z-[200] bg-ink/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -162,8 +205,24 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
 
-              <button onClick={handleAlreadyTransferred} disabled={loading} className="btn-primary w-full">
-                {loading ? "Memproses..." : "Saya Sudah Transfer"}
+              <div>
+                <label className="label">Unggah Bukti Transfer / Pembayaran</label>
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    setProofFile(e.target.files?.[0] || null);
+                    setProofError(null);
+                  }}
+                />
+                <p className="text-xs text-ink/40 mt-1">Wajib diisi — foto/screenshot bukti transfer atau bukti scan QRIS.</p>
+                {proofError && <p className="text-xs text-clay mt-1">{proofError}</p>}
+              </div>
+
+              <button onClick={handleAlreadyTransferred} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+                <Upload size={16} />
+                {loading ? "Mengirim..." : "Saya Sudah Transfer"}
               </button>
             </div>
           )}
@@ -172,9 +231,18 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
             <div className="text-center py-6">
               <Check className="mx-auto text-turquoise mb-3" size={40} />
               <p className="font-semibold text-ink">
-                Permintaan top up berhasil dikirim dan menunggu verifikasi admin.
+                Permintaan top up berhasil dikirim beserta bukti transfer, dan menunggu verifikasi admin.
               </p>
-              <button onClick={onClose} className="btn-secondary w-full mt-6">
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full mt-6 flex items-center justify-center gap-2 !bg-[#25D366] hover:!bg-[#1ebe57]"
+              >
+                <MessageCircle size={16} />
+                Konfirmasi via WhatsApp Admin
+              </a>
+              <button onClick={onClose} className="btn-secondary w-full mt-3">
                 Tutup
               </button>
             </div>
