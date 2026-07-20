@@ -77,7 +77,7 @@ export default function WorkerWithdrawPage() {
 
       {!profile?.bank_account_number && (
         <div className="card p-4 bg-gold-light mb-4 text-sm flex items-center justify-between gap-3">
-          Rekening bank belum diisi.
+          Rekening bank/e-wallet belum diisi.
           <Link href="/dashboard/worker/bank" className="btn-secondary !px-3 !py-1.5 text-xs shrink-0">
             Isi sekarang
           </Link>

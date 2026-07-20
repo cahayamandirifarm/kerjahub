@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function BankAccountPage() {
+export default function EmployerBankAccountPage() {
   const router = useRouter();
   const supabase = createClient();
   const [form, setForm] = useState({ bank_name: "", bank_account_number: "", bank_account_holder: "" });
@@ -16,7 +16,7 @@ export default function BankAccountPage() {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/login?next=/dashboard/worker/bank");
+        router.push("/login?next=/dashboard/employer/bank");
         return;
       }
       const { data } = await supabase
@@ -44,7 +44,7 @@ export default function BankAccountPage() {
     if (!user) return;
     const { error } = await supabase.from("profiles").update(form).eq("id", user.id);
     setLoading(false);
-    setMessage(error ? "Gagal menyimpan data." : "Data rekening tersimpan.");
+    setMessage(error ? "Gagal menyimpan data." : "Data rekening/e-wallet tersimpan.");
   }
 
   return (

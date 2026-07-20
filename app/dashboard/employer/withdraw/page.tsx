@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -94,6 +95,10 @@ function EmployerWalletContent() {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    if (!profile?.bank_account_number) {
+      setError("Lengkapi data rekening bank/e-wallet terlebih dahulu.");
+      return;
+    }
     setLoading(true);
     const { error: rpcError } = await supabase.rpc("request_withdrawal", { p_amount: Number(amount) });
     setLoading(false);
@@ -158,6 +163,14 @@ function EmployerWalletContent() {
         </form>
       ) : (
         <form onSubmit={handleWithdraw} className="space-y-4 card p-5">
+          {!profile?.bank_account_number && (
+            <div className="card p-4 bg-gold-light text-sm flex items-center justify-between gap-3">
+              Rekening bank/e-wallet belum diisi.
+              <Link href="/dashboard/employer/bank" className="btn-secondary !px-3 !py-1.5 text-xs shrink-0">
+                Isi sekarang
+              </Link>
+            </div>
+          )}
           <p className="text-sm text-ink/60">
             Setiap penarikan dikenakan biaya admin <b>Rp10.000</b> per transaksi.
           </p>

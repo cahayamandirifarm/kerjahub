@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
-import { Wallet, Plus, ArrowDownToLine, Users, Store } from "lucide-react";
+import { Wallet, Plus, ArrowDownToLine, Users, Store, Landmark } from "lucide-react";
 import TopUpButton from "@/components/TopUpButton";
 import JobPostingActions from "@/components/JobPostingActions";
 import ListingPostingActions from "@/components/ListingPostingActions";
@@ -72,6 +72,13 @@ export default async function EmployerDashboard() {
             style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
           >
             <ArrowDownToLine size={16} /> Tarik Saldo
+          </Link>
+          <Link
+            href="/dashboard/employer/bank"
+            className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
+          >
+            <Landmark size={16} /> Rekening Bank
           </Link>
         </div>
       </div>

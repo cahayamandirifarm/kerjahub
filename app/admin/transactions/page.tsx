@@ -16,11 +16,15 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default async function AdminTransactionsPage() {
   const supabase = createClient();
-  const { data: transactions } = await supabase
+  const { data: transactions, error } = await supabase
     .from("transactions")
-    .select("*, profiles(full_name)")
+    .select("*, profiles!transactions_profile_id_fkey(full_name)")
     .order("created_at", { ascending: false })
     .limit(150);
+
+  if (error) {
+    console.error("Gagal memuat transaksi:", error);
+  }
 
   const { data: komisiRows } = await supabase
     .from("transactions")
