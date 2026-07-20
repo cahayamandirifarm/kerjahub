@@ -79,6 +79,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [otherReadStatus, setOtherReadStatus] = useState<Record<string, string>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
   const otherIdRef = useRef<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -104,26 +105,71 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       }
       setUserId(user.id);
 
+      // Ambil kolom flat dulu (tanpa embed bertingkat). Query embed PostgREST
+      // (mis. order:digital_orders(listing:digital_listings(title))) gagal
+      // total kalau schema cache Supabase belum di-reload setelah migrasi
+      // baru (mis. kolom listing_id dari 0010_pre_deal_chat.sql), dan
+      // sebelumnya itu menyebabkan HALAMAN INI LANGSUNG REDIRECT DIAM-DIAM
+      // ke /chat untuk SEMUA jenis percakapan, bukan cuma yang baru.
       const { data: convRow, error: convErr } = await supabase
         .from("conversations")
-        .select(
-          "id, source_type, is_locked, is_dispute, job:jobs(title), order:digital_orders(listing:digital_listings(title)), listing:digital_listings(title)"
-        )
+        .select("id, source_type, job_id, order_id, listing_id, is_locked, is_dispute")
         .eq("id", conversationId)
         .single();
 
       if (convErr || !convRow) {
-        router.push("/chat");
+        console.error("Gagal memuat percakapan:", convErr);
+        // PGRST116 = baris tidak ditemukan (mis. bukan anggota / sudah dihapus).
+        // Untuk error lain (relationship/schema/koneksi) jangan langsung
+        // tendang balik ke daftar chat tanpa keterangan — tampilkan pesan.
+        if (convErr?.code === "PGRST116") {
+          router.push("/chat");
+        } else {
+          setLoadError(
+            convErr?.message || "Gagal memuat percakapan. Coba lagi beberapa saat."
+          );
+        }
         return;
       }
 
-      const jobRel = convRow.job as any;
-      const orderRel = convRow.order as any;
-      const listingRel = convRow.listing as any;
+      // Judul percakapan diambil terpisah per source_type supaya kegagalan
+      // salah satu lookup (mis. tabel/relasi belum sinkron) tidak
+      // menggagalkan seluruh halaman — cukup fallback ke "Percakapan".
+      let title = "Percakapan";
+      try {
+        if (convRow.source_type === "job" && convRow.job_id) {
+          const { data } = await supabase.from("jobs").select("title").eq("id", convRow.job_id).single();
+          if (data?.title) title = data.title;
+        } else if (convRow.source_type === "marketplace" && convRow.order_id) {
+          const { data: order } = await supabase
+            .from("digital_orders")
+            .select("listing_id")
+            .eq("id", convRow.order_id)
+            .single();
+          if (order?.listing_id) {
+            const { data: listing } = await supabase
+              .from("digital_listings")
+              .select("title")
+              .eq("id", order.listing_id)
+              .single();
+            if (listing?.title) title = listing.title;
+          }
+        } else if (convRow.source_type === "listing" && convRow.listing_id) {
+          const { data } = await supabase
+            .from("digital_listings")
+            .select("title")
+            .eq("id", convRow.listing_id)
+            .single();
+          if (data?.title) title = data.title;
+        }
+      } catch (titleErr) {
+        console.error("Gagal memuat judul percakapan:", titleErr);
+      }
+
       setConv({
         id: convRow.id,
         source_type: convRow.source_type,
-        title: jobRel?.title || orderRel?.listing?.title || listingRel?.title || "Percakapan",
+        title,
         is_locked: convRow.is_locked,
         is_dispute: convRow.is_dispute
       });
@@ -450,6 +496,23 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     searchOpen && searchQuery.trim()
       ? messages.filter((m) => !m.deleted_at && m.content.toLowerCase().includes(searchQuery.trim().toLowerCase()))
       : messages;
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 gap-3">
+        <AlertTriangle className="text-clay" size={28} />
+        <p className="text-sm text-ink/70 max-w-xs">{loadError}</p>
+        <div className="flex gap-2">
+          <button onClick={() => window.location.reload()} className="btn-primary !px-4 !py-2 text-sm">
+            Coba lagi
+          </button>
+          <button onClick={() => router.push("/chat")} className="px-4 py-2 text-sm rounded-pill border border-line">
+            Kembali
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!conv) {
     return (

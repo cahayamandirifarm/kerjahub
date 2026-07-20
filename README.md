@@ -196,6 +196,18 @@ Ditambahkan di atas fondasi awal:
 ### Migration tambahan (jalankan urut setelah 0001-0002)
 - `supabase/migrations/0003_topup_pwa.sql` — tabel `topup_requests`, `payment_settings` (rekening + QRIS admin), `wallet_transactions`, realtime untuk `topup_requests`, bucket storage `payment-settings`.
 - `supabase/migrations/0004_marketplace_digital_banners.sql` — kolom `jobs.is_active`, tabel `banners`, dan seluruh sistem **Marketplace Digital**: `digital_listings`, `digital_orders` (escrow terpisah dengan kode unik sendiri), `digital_disputes`, realtime untuk order & listing.
+- `supabase/migrations/0005_marketplace_fixes.sql` — perbaikan kecil skema marketplace.
+- `supabase/migrations/0006_chat_system.sql` — **WAJIB untuk fitur Chat**: memperluas `conversations` (source_type, order_id, is_dispute, is_locked), tabel `conversation_members`, `message_reads`, `attachments`, `blocked_users`, `disputes`, trigger otomatis, bucket storage privat untuk lampiran chat.
+- `supabase/migrations/0007_chat_ui_support.sql` — dukungan tambahan untuk UI chat (backfill percakapan marketplace lama).
+- `supabase/migrations/0008_admin_chat.sql` — dashboard admin untuk chat & sengketa.
+- `supabase/migrations/0009_push_notifications.sql` — push notification untuk chat.
+- `supabase/migrations/0010_pre_deal_chat.sql` — kolom `listing_id`/`initiator_id` di `conversations`, RPC `start_listing_chat`, chat pra-order untuk listing marketplace.
+
+⚠️ **Kalau menu Chat kebuka lalu langsung "mental" balik ke daftar chat (loading terus tanpa pernah menampilkan chat box):** hampir pasti karena migration `0006`–`0010` di atas **belum pernah dijalankan** di project Supabase produksi (redeploy Vercel TIDAK menjalankan migration secara otomatis — itu terpisah dari deployment aplikasi). Jalankan satu per satu lewat **Supabase Dashboard → SQL Editor** sesuai urutan nomornya, lalu reload schema cache dengan menjalankan:
+```sql
+select pg_notify('pgrst', 'reload schema');
+```
+(atau lewat Dashboard → Settings → API → "Reload schema"), supaya PostgREST mengenali kolom/tabel baru. Tanpa langkah reload ini, query yang menyentuh tabel/kolom baru akan gagal walau migration sudah dijalankan.
 
 ### PWA
 - `public/manifest.json`, `public/service-worker.js`, `public/offline.html`, ikon di `public/icons/`
