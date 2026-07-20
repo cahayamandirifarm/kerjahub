@@ -63,6 +63,13 @@ export default async function WorkerDashboard() {
           >
             <Landmark size={16} /> Rekening Bank
           </Link>
+          <Link
+            href="/dashboard/riwayat"
+            className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
+          >
+            <History size={16} /> Riwayat Transaksi
+          </Link>
         </div>
       </div>
 

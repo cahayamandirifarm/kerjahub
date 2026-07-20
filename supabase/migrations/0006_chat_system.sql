@@ -263,6 +263,8 @@ returns trigger as $$
 declare
   v_dispute_id uuid;
   v_admin record;
+  v_sender_name text;
+  v_recipient record;
 begin
   -- update last_message_at percakapan (kecuali pesan sistem kosong)
   update conversations set last_message_at = new.created_at where id = new.conversation_id;
@@ -273,6 +275,31 @@ begin
   from conversation_members cm
   where cm.conversation_id = new.conversation_id and cm.profile_id <> new.sender_id
   on conflict (message_id, profile_id) do nothing;
+
+  -- notifikasi in-app (toast + bunyi lewat NotificationContext, sekaligus
+  -- jadi trigger push notification background lewat trg_notify_push_for_message
+  -- yang membaca tabel `messages`, bukan `notifications`, jadi ini tidak dobel).
+  if not new.is_system then
+    select full_name into v_sender_name from profiles where id = new.sender_id;
+
+    for v_recipient in
+      select profile_id from conversation_members
+      where conversation_id = new.conversation_id and profile_id <> new.sender_id
+    loop
+      insert into notifications (profile_id, title, body, link, category)
+      values (
+        v_recipient.profile_id,
+        coalesce(v_sender_name, 'Pesan baru'),
+        case
+          when new.message_type = 'image' then '📷 Mengirim gambar'
+          when new.message_type = 'document' then '📄 ' || coalesce(nullif(new.content, ''), 'Mengirim dokumen')
+          else left(new.content, 120)
+        end,
+        '/chat/' || new.conversation_id,
+        'chat'
+      );
+    end loop;
+  end if;
 
   if not new.is_system and left(trim(new.content), 11) = '/tanyaadmin' then
     insert into disputes (conversation_id, opened_by, trigger_message_id)

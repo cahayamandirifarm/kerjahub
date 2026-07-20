@@ -37,7 +37,7 @@ const NAV = [
   { href: "/admin/marketplace-orders", label: "Order Marketplace Digital", icon: ShoppingBag },
   { href: "/admin/banners", label: "Banner Beranda", icon: ImageIcon },
   { href: "/admin/ratings", label: "Rating & Ulasan", icon: Star },
-  { href: "/admin/transactions", label: "Transaksi & Komisi", icon: Receipt },
+  { href: "/admin/transactions", label: "Monitoring Transaksi", icon: Receipt },
   { href: "/admin/settings", label: "Pengaturan Website", icon: Settings },
   { href: "/admin/audit-log", label: "Audit Log", icon: ShieldAlert }
 ];
