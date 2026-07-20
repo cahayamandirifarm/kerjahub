@@ -33,7 +33,8 @@ import {
   FileText,
   Loader2,
   Check,
-  CheckCheck
+  CheckCheck,
+  ExternalLink
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -50,6 +51,8 @@ interface ConversationInfo {
   title: string;
   is_locked: boolean;
   is_dispute: boolean;
+  contextUrl: string | null;
+  contextLabel: string | null;
 }
 
 const PAGE_SIZE = 30;
@@ -132,14 +135,17 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         return;
       }
 
-      // Judul percakapan diambil terpisah per source_type supaya kegagalan
-      // salah satu lookup (mis. tabel/relasi belum sinkron) tidak
-      // menggagalkan seluruh halaman — cukup fallback ke "Percakapan".
+      // Judul percakapan + link ke lowongan/produk terkait diambil terpisah
+      // per source_type supaya kegagalan salah satu lookup (mis. tabel/relasi
+      // belum sinkron) tidak menggagalkan seluruh halaman — cukup fallback
+      // ke "Percakapan" tanpa link.
       let title = "Percakapan";
+      let contextUrl: string | null = null;
       try {
         if (convRow.source_type === "job" && convRow.job_id) {
           const { data } = await supabase.from("jobs").select("title").eq("id", convRow.job_id).single();
           if (data?.title) title = data.title;
+          contextUrl = `/jobs/${convRow.job_id}`;
         } else if (convRow.source_type === "marketplace" && convRow.order_id) {
           const { data: order } = await supabase
             .from("digital_orders")
@@ -153,6 +159,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
               .eq("id", order.listing_id)
               .single();
             if (listing?.title) title = listing.title;
+            contextUrl = `/marketplace/${order.listing_id}`;
           }
         } else if (convRow.source_type === "listing" && convRow.listing_id) {
           const { data } = await supabase
@@ -161,6 +168,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
             .eq("id", convRow.listing_id)
             .single();
           if (data?.title) title = data.title;
+          contextUrl = `/marketplace/${convRow.listing_id}`;
         }
       } catch (titleErr) {
         console.error("Gagal memuat judul percakapan:", titleErr);
@@ -171,7 +179,9 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         source_type: convRow.source_type,
         title,
         is_locked: convRow.is_locked,
-        is_dispute: convRow.is_dispute
+        is_dispute: convRow.is_dispute,
+        contextUrl,
+        contextLabel: convRow.source_type === "job" ? "Lihat lowongan" : "Lihat produk"
       });
 
       const { data: members } = await supabase
@@ -279,13 +289,41 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       )
       .subscribe();
 
+    // Fallback polling — jaring pengaman kalau koneksi realtime (WebSocket)
+    // putus/gagal reconnect (umum di jaringan seluler yang tidak stabil).
+    // Ambil pesan yang lebih baru dari pesan terakhir yang sudah ada di
+    // layar; kalau realtime bekerja normal ini hampir selalu kosong.
+    const pollInterval = setInterval(async () => {
+      if (document.hidden) return;
+      setMessages((prev) => {
+        const lastCreatedAt = prev.length ? prev[prev.length - 1].created_at : null;
+        if (!lastCreatedAt) return prev;
+        supabase
+          .from("messages")
+          .select("*, attachments(*)")
+          .eq("conversation_id", conversationId)
+          .gt("created_at", lastCreatedAt)
+          .order("created_at", { ascending: true })
+          .then(({ data }) => {
+            if (!data || !data.length) return;
+            setMessages((cur) => {
+              const known = new Set(cur.map((m) => m.id));
+              const fresh = (data as ChatMessage[]).filter((m) => !known.has(m.id));
+              if (!fresh.length) return cur;
+              setTimeout(() => scrollToBottom(), 50);
+              return [...cur, ...fresh];
+            });
+          });
+        return prev;
+      });
+    }, 4000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, userId]);
-
-  // -------------------- presence: typing --------------------
   useEffect(() => {
     if (!userId) return;
     const channel = supabase.channel(`presence-${conversationId}`, { config: { presence: { key: userId } } });
@@ -357,13 +395,29 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     broadcastTyping(false);
     const replyToId = replyTo?.id ?? null;
     setReplyTo(null);
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: userId,
-      content,
-      reply_to_id: replyToId,
-      message_type: "text"
-    });
+    const { data: inserted, error: insErr } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: userId,
+        content,
+        reply_to_id: replyToId,
+        message_type: "text"
+      })
+      .select("*, attachments(*)")
+      .single();
+    // Tampilkan pesan sendiri LANGSUNG dari hasil insert, jangan tunggu event
+    // realtime pantul balik — kalau koneksi realtime lambat/putus, pesan
+    // baru kelihatan setelah reload. Event realtime tetap dipakai untuk
+    // pesan dari lawan bicara (dan di-dedupe lewat pengecekan id di bawah).
+    if (!insErr && inserted) {
+      setMessages((prev) => (prev.some((m) => m.id === (inserted as any).id) ? prev : [...prev, inserted as any]));
+      setTimeout(() => scrollToBottom(), 50);
+    } else if (insErr) {
+      console.error("Gagal mengirim pesan:", insErr);
+      setText(content);
+      alert("Pesan gagal terkirim. Coba lagi.");
+    }
     // kalau isi pesan /tanyaadmin, trigger DB otomatis mengunci percakapan &
     // membuat tiket sengketa — UI ikut update lewat langganan realtime di atas.
   }
@@ -578,6 +632,24 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+          </div>
+        )}
+        {conv.contextUrl && (
+          <div className="max-w-lg mx-auto px-3 pb-2.5">
+            <a
+              href={conv.contextUrl}
+              className="flex items-center gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-xs hover:border-turquoise/50 transition-colors"
+            >
+              {conv.source_type === "job" ? (
+                <Briefcase size={14} className="text-turquoise-dark shrink-0" />
+              ) : (
+                <ShoppingBag size={14} className="text-turquoise-dark shrink-0" />
+              )}
+              <span className="min-w-0 flex-1 truncate text-ink/70">
+                {conv.contextLabel}: <span className="font-semibold text-ink">{conv.title}</span>
+              </span>
+              <ExternalLink size={13} className="text-ink/35 shrink-0" />
+            </a>
           </div>
         )}
         {conv.is_locked && (
