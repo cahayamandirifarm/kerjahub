@@ -14,7 +14,9 @@ import {
   Star,
   ShieldAlert,
   ShoppingBag,
-  Image as ImageIcon
+  Image as ImageIcon,
+  MessageCircle,
+  AlertTriangle
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 
@@ -22,6 +24,8 @@ const NAV = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard },
   { href: "/admin/users", label: "Pengguna", icon: Users },
   { href: "/admin/kyc", label: "Verifikasi Selfie KYC", icon: ShieldCheck },
+  { href: "/admin/chats", label: "Monitoring Chat", icon: MessageCircle },
+  { href: "/admin/disputes", label: "Sengketa Chat", icon: AlertTriangle },
   { href: "/admin/escrow", label: "Konfirmasi Escrow", icon: ArrowDownToLine },
   { href: "/admin/topup-requests", label: "Top Up Saldo", icon: Upload },
   { href: "/admin/payment-settings", label: "Pengaturan Pembayaran", icon: Landmark },

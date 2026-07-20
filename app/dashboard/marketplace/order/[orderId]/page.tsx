@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import { MessageCircle } from "lucide-react";
 import { DIGITAL_ORDER_LABEL, DigitalOrderStatus } from "@/lib/types";
 import OrderActions from "./OrderActions";
 
@@ -27,6 +29,7 @@ export default async function DigitalOrderPage({ params }: { params: { orderId: 
   if (!isBuyer && !isSeller) redirect("/dashboard/marketplace/orders");
 
   const { data: settings } = await supabase.from("payment_settings").select("*").eq("id", 1).single();
+  const { data: conversation } = await supabase.from("conversations").select("id").eq("order_id", order.id).single();
 
   return (
     <div className="min-h-screen pb-16">
@@ -69,6 +72,12 @@ export default async function DigitalOrderPage({ params }: { params: { orderId: 
               <img src={order.receipt_proof_url} alt="" className="w-full rounded-lg" />
             </a>
           </div>
+        )}
+
+        {conversation && (
+          <Link href={`/chat/${conversation.id}`} className="btn-secondary w-full !py-3 mb-4 gap-2">
+            <MessageCircle size={16} /> {isBuyer ? "Chat dengan Penjual" : "Chat dengan Pembeli"}
+          </Link>
         )}
 
         <OrderActions

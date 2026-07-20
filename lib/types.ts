@@ -137,3 +137,62 @@ export const DIGITAL_ORDER_LABEL: Record<DigitalOrderStatus, string> = {
 };
 
 export const ADMIN_WHATSAPP_NUMBER = "6285178509892";
+
+// ---------------------------------------------------------
+// CHAT
+// ---------------------------------------------------------
+export type MessageType = "text" | "image" | "document" | "system";
+export type ReadStatus = "terkirim" | "diterima" | "dibaca";
+export type DisputeStatus = "menunggu_admin" | "diproses" | "selesai" | "ditolak";
+
+export const DISPUTE_STATUS_LABEL: Record<DisputeStatus, string> = {
+  menunggu_admin: "Menunggu Admin",
+  diproses: "Diproses",
+  selesai: "Selesai",
+  ditolak: "Ditolak"
+};
+
+export interface ChatAttachment {
+  id: string;
+  message_id: string;
+  conversation_id: string;
+  uploaded_by: string;
+  file_url: string;
+  file_name: string;
+  file_type: "image" | "pdf" | "document";
+  file_size: number | null;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  message_type: MessageType;
+  is_system: boolean;
+  reply_to_id: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  attachments?: ChatAttachment[];
+}
+
+export interface ConversationListItem {
+  conversation_id: string;
+  source_type: "job" | "marketplace";
+  job_id: string | null;
+  order_id: string | null;
+  title: string;
+  other_id: string | null;
+  other_name: string | null;
+  other_avatar: string | null;
+  other_online: boolean;
+  last_message: string | null;
+  last_message_at: string;
+  last_sender_id: string | null;
+  unread_count: number;
+  is_archived: boolean;
+  is_dispute: boolean;
+  is_locked: boolean;
+}

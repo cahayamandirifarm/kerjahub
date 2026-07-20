@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { NotificationProvider } from "@/lib/NotificationContext";
+import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
 
@@ -61,9 +62,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${poppins.variable} font-body antialiased`}>
         <AuthProvider>
           <NotificationProvider>
-            <OnlineStatus />
-            <PWAInstall />
-            {children}
+            <ChatUnreadProvider>
+              <OnlineStatus />
+              <PWAInstall />
+              {children}
+            </ChatUnreadProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>

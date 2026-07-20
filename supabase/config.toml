@@ -1,0 +1,9 @@
+# Konfigurasi Supabase CLI untuk project ini.
+#
+# send-chat-push dipanggil oleh trigger database (lewat ekstensi pg_net),
+# BUKAN oleh browser dengan token login — jadi verifikasi JWT bawaan
+# Supabase harus dimatikan untuk fungsi ini. Keamanannya tetap terjaga
+# lewat header x-webhook-secret yang dicek manual di dalam kode fungsi
+# (lihat supabase/functions/send-chat-push/index.ts).
+[functions.send-chat-push]
+verify_jwt = false

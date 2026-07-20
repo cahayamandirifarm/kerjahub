@@ -1,4 +1,4 @@
-const CACHE_NAME = "kerjahub-cache-v2-redesign";
+const CACHE_NAME = "kerjahub-cache-v3-push";
 const OFFLINE_URL = "/offline.html";
 
 // Aset dasar yang di-cache saat install (app shell).
@@ -66,4 +66,65 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+// -------------------- Push Notification --------------------
+// Halaman aktif memberi tahu SW percakapan mana yang sedang dibuka lewat
+// postMessage, supaya kita tidak menampilkan notifikasi push untuk chat
+// yang sedang dilihat pengguna (in-app toast sudah cukup untuk kasus itu).
+let activeConversationId = null;
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "ACTIVE_CONVERSATION") {
+    activeConversationId = event.data.conversationId || null;
+  }
+});
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    return;
+  }
+
+  event.waitUntil(
+    (async () => {
+      // kalau ada tab yang fokus & sedang melihat percakapan yang sama, skip —
+      // biar tidak dobel dengan toast in-app.
+      const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const isViewingThisChat = clientsList.some(
+        (c) => c.focused && payload.conversationId && activeConversationId === payload.conversationId
+      );
+      if (isViewingThisChat) return;
+
+      await self.registration.showNotification(payload.title || "Pesan baru", {
+        body: payload.body,
+        icon: payload.icon || "/icons/icon-192.png",
+        badge: payload.badge || "/icons/icon-192.png",
+        tag: payload.tag,
+        data: { conversationId: payload.conversationId },
+        vibrate: [120, 60, 120]
+      });
+    })()
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const conversationId = event.notification.data?.conversationId;
+  const targetUrl = conversationId ? `/chat/${conversationId}` : "/chat";
+
+  event.waitUntil(
+    (async () => {
+      const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const existing = clientsList.find((c) => c.url.includes(targetUrl));
+      if (existing) {
+        existing.focus();
+      } else {
+        self.clients.openWindow(targetUrl);
+      }
+    })()
+  );
 });

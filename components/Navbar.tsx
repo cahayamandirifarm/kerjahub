@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useNotifications } from "@/lib/NotificationContext";
+import { useChatUnread } from "@/lib/ChatUnreadContext";
 import { createClient } from "@/lib/supabase/client";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, MessageCircle } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Beranda", href: "/" },
@@ -17,6 +18,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const { user, profile, loading } = useAuth();
   const { unreadCount } = useNotifications();
+  const { unreadChatCount } = useChatUnread();
   const router = useRouter();
 
   async function handleLogout() {
@@ -53,6 +55,19 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {!loading && user && (
+            <Link
+              href="/chat"
+              className="relative p-2.5 rounded-full text-ink/60 hover:text-turquoise-dark hover:bg-turquoise-light/60 transition-colors"
+            >
+              <MessageCircle size={19} />
+              {unreadChatCount > 0 && (
+                <span className="absolute top-1 right-1 bg-clay text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {unreadChatCount > 9 ? "9+" : unreadChatCount}
+                </span>
+              )}
+            </Link>
+          )}
           {!loading && user && (
             <Link
               href="/notifications"

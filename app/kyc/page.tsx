@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
-import { ShieldCheck, Volume2, VolumeX } from "lucide-react";
+import { ShieldCheck, Volume2, VolumeX, Bell, BellOff } from "lucide-react";
+import { getPushSubscriptionStatus, pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 
 export default function KycPage() {
   const router = useRouter();
@@ -17,6 +18,31 @@ export default function KycPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState<"unsupported" | "denied" | "subscribed" | "unsubscribed" | "loading">("loading");
+
+  useEffect(() => {
+    if (!pushSupported()) {
+      setPushStatus("unsupported");
+      return;
+    }
+    getPushSubscriptionStatus().then(setPushStatus);
+  }, []);
+
+  async function togglePush() {
+    if (!user) return;
+    if (pushStatus === "subscribed") {
+      await unsubscribeFromPush();
+      setPushStatus("unsubscribed");
+      return;
+    }
+    try {
+      await subscribeToPush(user.id);
+      setPushStatus("subscribed");
+    } catch (err: any) {
+      alert(err.message || "Gagal mengaktifkan notifikasi push.");
+      setPushStatus(await getPushSubscriptionStatus());
+    }
+  }
 
   async function loadProfile() {
     if (!user) {
@@ -133,6 +159,32 @@ export default function KycPage() {
             />
           </button>
         </div>
+
+        {pushStatus !== "unsupported" && (
+          <div className="card p-4 mt-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm font-medium text-ink">
+                {pushStatus === "subscribed" ? <Bell size={16} /> : <BellOff size={16} />}
+                Notifikasi push
+              </div>
+              {pushStatus === "denied" && (
+                <p className="text-[11px] text-clay mt-1">Izin diblokir di browser. Aktifkan lewat pengaturan situs.</p>
+              )}
+              {pushStatus !== "denied" && (
+                <p className="text-[11px] text-ink/45 mt-1">Dapatkan notifikasi pesan chat baru walau aplikasi ditutup.</p>
+              )}
+            </div>
+            <button
+              onClick={togglePush}
+              disabled={pushStatus === "denied" || pushStatus === "loading"}
+              className={`w-11 h-6 rounded-full transition relative shrink-0 disabled:opacity-40 ${pushStatus === "subscribed" ? "bg-turquoise" : "bg-line"}`}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition ${pushStatus === "subscribed" ? "left-5" : "left-0.5"}`}
+              />
+            </button>
+          </div>
+        )}
 
         <button onClick={handleLogout} className="btn-secondary w-full mt-6">
           Keluar dari Akun
