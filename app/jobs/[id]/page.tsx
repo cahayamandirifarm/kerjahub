@@ -4,6 +4,7 @@ import StatusBadge from "@/components/StatusStepper";
 import { notFound } from "next/navigation";
 import { MapPin, Clock, ShieldCheck } from "lucide-react";
 import ApplyButton from "./ApplyButton";
+import ChatInquiryButton from "@/components/ChatInquiryButton";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -87,7 +88,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
+          <ChatInquiryButton
+            kind="job"
+            refId={job.id}
+            ownerId={job.employer_id}
+            label={isWorkerListing ? "Tanya Dulu Sebelum Ajak Kerja Sama" : "Tanya Dulu Sebelum Melamar"}
+          />
           <ApplyButton jobId={job.id} jobStage={job.stage} isWorkerListing={isWorkerListing} />
         </div>
       </div>

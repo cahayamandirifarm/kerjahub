@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import { notFound } from "next/navigation";
 import { DIGITAL_CATEGORIES } from "@/lib/types";
 import BuyButton from "./BuyButton";
+import ChatInquiryButton from "@/components/ChatInquiryButton";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n).toLocaleString("id-ID");
@@ -55,7 +56,8 @@ export default async function DigitalListingPage({ params }: { params: { id: str
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
+          <ChatInquiryButton kind="listing" refId={listing.id} ownerId={listing.seller_id} />
           <BuyButton listingId={listing.id} status={listing.status} />
         </div>
       </div>
