@@ -17,11 +17,15 @@
 export default function ScrollToJobsButton() {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    document.getElementById("daftar-kerja")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Section nearby cuma render kalau browser sudah dapat izin lokasi.
+    // Kalau belum ada (elemen tidak ditemukan), fallback ke daftar
+    // lowongan umum supaya tombol tetap merespons, bukan diam saja.
+    const target = document.getElementById("lowongan-terdekat") ?? document.getElementById("daftar-kerja");
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <a href="#daftar-kerja" onClick={handleClick} className="btn-primary">
+    <a href="#lowongan-terdekat" onClick={handleClick} className="btn-primary">
       Temukan Lowongan &amp; Pekerja Sekitar
     </a>
   );

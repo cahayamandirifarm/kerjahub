@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDistance } from "@/lib/geo-helpers";
 import { MapPin, Navigation, Star, CheckCircle2, Briefcase, User } from "lucide-react";
 import Link from "next/link";
+import PostCTAButtons from "@/components/PostCTAButtons";
 
 interface NearbyJob {
   kind: "job";
@@ -91,7 +92,7 @@ export default function NearbyJobsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!enabled || !items || items.length === 0) return null;
+  if (!enabled || !items) return null;
 
   return (
     <section id="lowongan-terdekat" className="max-w-5xl mx-auto px-4 mb-8 scroll-mt-24">
@@ -99,6 +100,16 @@ export default function NearbyJobsSection() {
         <Navigation size={16} className="text-turquoise" />
         <h2 className="font-display text-lg font-semibold">Lowongan &amp; Pekerja Terdekat</h2>
       </div>
+
+      {items.length === 0 ? (
+        <div className="card p-8 text-center">
+          <p className="text-ink/60">Belum tersedia lowongan &amp; pekerja sekitar.</p>
+          <p className="font-display font-semibold text-ink mt-1">Pasang Lowongan &amp; Pekerja Sekarang</p>
+          <div className="flex justify-center">
+            <PostCTAButtons />
+          </div>
+        </div>
+      ) : (
       <div className="grid sm:grid-cols-2 gap-4">
         {items.map((item) =>
           item.kind === "job" ? (
@@ -172,6 +183,7 @@ export default function NearbyJobsSection() {
           )
         )}
       </div>
+      )}
     </section>
   );
 }

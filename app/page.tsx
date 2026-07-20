@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import JobCard from "@/components/JobCard";
+import NearbyJobsSection from "@/components/NearbyJobsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import SiteBanner from "@/components/SiteBanner";
 import BannerCarousel from "@/components/BannerCarousel";
@@ -64,6 +65,8 @@ export default async function HomePage({
           <PostCTAButtons />
         </div>
       </section>
+
+      <NearbyJobsSection />
 
       <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>
