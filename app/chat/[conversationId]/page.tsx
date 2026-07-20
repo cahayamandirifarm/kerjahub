@@ -46,7 +46,7 @@ interface OtherProfile {
 
 interface ConversationInfo {
   id: string;
-  source_type: "job" | "marketplace";
+  source_type: "job" | "marketplace" | "listing";
   title: string;
   is_locked: boolean;
   is_dispute: boolean;
@@ -106,7 +106,9 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
 
       const { data: convRow, error: convErr } = await supabase
         .from("conversations")
-        .select("id, source_type, is_locked, is_dispute, job:jobs(title), order:digital_orders(listing:digital_listings(title))")
+        .select(
+          "id, source_type, is_locked, is_dispute, job:jobs(title), order:digital_orders(listing:digital_listings(title)), listing:digital_listings(title)"
+        )
         .eq("id", conversationId)
         .single();
 
@@ -117,10 +119,11 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
 
       const jobRel = convRow.job as any;
       const orderRel = convRow.order as any;
+      const listingRel = convRow.listing as any;
       setConv({
         id: convRow.id,
         source_type: convRow.source_type,
-        title: jobRel?.title || orderRel?.listing?.title || "Percakapan",
+        title: jobRel?.title || orderRel?.listing?.title || listingRel?.title || "Percakapan",
         is_locked: convRow.is_locked,
         is_dispute: convRow.is_dispute
       });
