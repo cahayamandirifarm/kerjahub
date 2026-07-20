@@ -8,6 +8,7 @@ import BannerCarousel from "@/components/BannerCarousel";
 import { Job, JOB_CATEGORIES } from "@/lib/types";
 import { Search } from "lucide-react";
 import PostCTAButtons from "@/components/PostCTAButtons";
+import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 
 export const revalidate = 0;
 
@@ -54,9 +55,7 @@ export default async function HomePage({
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href="#daftar-kerja" className="btn-primary">
-              Temukan Lowongan &amp; Pekerja Sekitar
-            </a>
+            <ScrollToJobsButton />
             <a href="/marketplace" className="btn-brand">
               Jelajahi Marketplace
             </a>
