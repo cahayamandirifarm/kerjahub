@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import JobCard from "@/components/JobCard";
-import NearbyJobsSection from "@/components/NearbyJobsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import SiteBanner from "@/components/SiteBanner";
 import BannerCarousel from "@/components/BannerCarousel";
@@ -64,24 +63,8 @@ export default async function HomePage({
           </div>
 
           <PostCTAButtons />
-
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Pekerja Terverifikasi", icon: "✓" },
-              { label: "Transaksi Aman", icon: "🔒" },
-              { label: "Komunikasi Mudah", icon: "💬" },
-              { label: "Pekerjaan Berkualitas", icon: "💼" }
-            ].map((f) => (
-              <div key={f.label} className="card-glass px-3 py-3 text-center">
-                <div className="text-lg mb-1">{f.icon}</div>
-                <p className="text-xs font-semibold text-ink/70 leading-tight">{f.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
-
-      <NearbyJobsSection />
 
       <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>

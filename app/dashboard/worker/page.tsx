@@ -51,8 +51,7 @@ export default async function WorkerDashboard() {
         <div className="flex flex-wrap gap-3 mt-4">
           <Link
             href="/dashboard/worker/withdraw"
-            className="btn-gold !px-4 !py-2 text-sm gap-1"
-            style={{ color: "#1C2321" }}
+            className="btn-primary !px-4 !py-2 !text-sm !shadow-none gap-1"
           >
             <ArrowDownToLine size={16} /> Tarik Saldo
           </Link>

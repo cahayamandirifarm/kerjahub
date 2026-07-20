@@ -65,7 +65,7 @@ export default async function EmployerDashboard() {
           {formatRupiah(profile?.wallet_balance)}
         </p>
         <div className="flex flex-wrap gap-3 mt-4">
-          <TopUpButton className="btn-gold !px-4 !py-2 text-sm gap-1" />
+          <TopUpButton className="btn-primary !px-4 !py-2 !text-sm !shadow-none gap-1" />
           <Link
             href="/dashboard/employer/withdraw?tab=tarik"
             className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
