@@ -65,7 +65,14 @@ export async function unsubscribeFromPush() {
 
 // beri tahu service worker percakapan mana yang sedang aktif dibuka,
 // supaya push untuk chat itu tidak dobel dengan toast in-app.
+let _activeConversationId: string | null = null;
+
+export function getActiveConversationId() {
+  return _activeConversationId;
+}
+
 export function notifyActiveConversation(conversationId: string | null) {
+  _activeConversationId = conversationId;
   if (!pushSupported()) return;
   navigator.serviceWorker.ready.then((reg) => {
     reg.active?.postMessage({ type: "ACTIVE_CONVERSATION", conversationId });

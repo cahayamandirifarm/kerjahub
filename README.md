@@ -203,12 +203,54 @@ Ditambahkan di atas fondasi awal:
 - `supabase/migrations/0009_push_notifications.sql` — push notification untuk chat.
 - `supabase/migrations/0010_pre_deal_chat.sql` — kolom `listing_id`/`initiator_id` di `conversations`, RPC `start_listing_chat`, chat pra-order untuk listing marketplace.
 - `supabase/migrations/0011_fix_conversation_members_recursion.sql` — **WAJIB**: memperbaiki bug "infinite recursion detected in policy for relation conversation_members" (policy SELECT lama query ke tabel dirinya sendiri). Tanpa ini, tap ke chat manapun akan gagal terbuka.
+- `supabase/migrations/0012_chat_notifications.sql` — memperluas trigger pesan chat supaya SETIAP pesan baru (bukan cuma /tanyaadmin) membuat baris di tabel `notifications`, sehingga toast + bunyi "beep" di `NotificationContext` (saat app terbuka) juga berbunyi untuk chat biasa, bukan cuma sengketa admin.
 
 ⚠️ **Kalau menu Chat kebuka lalu langsung "mental" balik ke daftar chat (loading terus tanpa pernah menampilkan chat box):** hampir pasti karena migration `0006`–`0010` di atas **belum pernah dijalankan** di project Supabase produksi (redeploy Vercel TIDAK menjalankan migration secara otomatis — itu terpisah dari deployment aplikasi). Jalankan satu per satu lewat **Supabase Dashboard → SQL Editor** sesuai urutan nomornya, lalu reload schema cache dengan menjalankan:
 ```sql
 select pg_notify('pgrst', 'reload schema');
 ```
 (atau lewat Dashboard → Settings → API → "Reload schema"), supaya PostgREST mengenali kolom/tabel baru. Tanpa langkah reload ini, query yang menyentuh tabel/kolom baru akan gagal walau migration sudah dijalankan.
+
+### Setup Push Notification (WAJIB untuk notif bar + suara saat PWA di-background/ditutup)
+Infrastrukturnya sudah lengkap di kode (migration `0009`, `lib/push.ts`, `public/service-worker.js`, `supabase/functions/send-chat-push`), TAPI belum aktif sampai langkah-langkah ini dijalankan sekali di awal — kalau belum, chat masuk hanya akan bunyi+toast saat app **sedang dibuka** (lewat migration `0012` di atas), tapi TIDAK muncul di notification bar HP saat app di-background atau ditutup.
+
+1. **Generate VAPID key pair** (sekali saja, simpan baik-baik):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+   Hasilnya sepasang Public Key & Private Key.
+
+2. **Set environment variable di Vercel** (Project Settings → Environment Variables):
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = Public Key dari langkah 1
+   Lalu redeploy supaya kebaca.
+
+3. **Deploy Edge Function ke Supabase** (butuh [Supabase CLI](https://supabase.com/docs/guides/cli)):
+   ```bash
+   supabase functions deploy send-chat-push
+   ```
+
+4. **Set secrets untuk Edge Function itu:**
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=xxxx VAPID_PRIVATE_KEY=xxxx VAPID_SUBJECT="mailto:admin@kerjahub.app"
+   supabase secrets set SUPABASE_URL=https://xxxx.supabase.co SUPABASE_SERVICE_ROLE_KEY=xxxx
+   ```
+   `PUSH_WEBHOOK_SECRET` **harus sama persis** dengan isi kolom `webhook_secret` di tabel `push_config` (sudah otomatis digenerate migration `0009`) — cek nilainya:
+   ```sql
+   select webhook_secret from push_config;
+   ```
+   lalu set:
+   ```bash
+   supabase secrets set PUSH_WEBHOOK_SECRET=<hasil query di atas>
+   ```
+
+5. **Isi `function_url` di `push_config`** dengan URL Edge Function yang baru dideploy (dari output langkah 3, formatnya `https://xxxx.supabase.co/functions/v1/send-chat-push`):
+   ```sql
+   update push_config set function_url = 'https://xxxx.supabase.co/functions/v1/send-chat-push';
+   ```
+
+6. **Aktifkan di HP** — buka app → menu **Akun** → toggle **"Notifikasi push"** (di halaman `/kyc`). Browser akan minta izin notifikasi; setelah diizinkan, device itu terdaftar. Ulangi per perangkat/akun yang mau menerima notif bar.
+
+Setelah 6 langkah ini, kirim pesan chat dari akun lain saat app di-background/ditutup di HP penerima → seharusnya muncul di notification bar HP lengkap dengan bunyi notifikasi bawaan sistem (Android/Chrome memutar bunyi notifikasi otomatis untuk setiap `showNotification`, tidak perlu file suara custom).
 
 ### PWA
 - `public/manifest.json`, `public/service-worker.js`, `public/offline.html`, ikon di `public/icons/`

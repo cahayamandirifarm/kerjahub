@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
+import { getActiveConversationId } from "@/lib/push";
 import Link from "next/link";
 import { X, Bell, CheckCircle2, Wallet, MessageCircle, ShieldCheck, Briefcase } from "lucide-react";
 
@@ -85,6 +86,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         { event: "INSERT", schema: "public", table: "notifications", filter: `profile_id=eq.${user.id}` },
         (payload) => {
           const row = payload.new as NotifRow;
+          // Kalau notifikasi chat ini untuk percakapan yang SEDANG dibuka
+          // pengguna, jangan toast+bunyi lagi — pesan sudah muncul langsung
+          // di bubble chat-nya lewat realtime, jadi bakal dobel.
+          if (row.category === "chat" && row.link && row.link === `/chat/${getActiveConversationId() || ""}`) {
+            setUnreadCount((c) => c + 1);
+            return;
+          }
           setUnreadCount((c) => c + 1);
           if (profile?.notif_sound_enabled !== false) playBeep();
           toastIdRef.current += 1;
