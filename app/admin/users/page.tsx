@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import SuspendToggle from "./SuspendToggle";
+import DeleteUserButton from "./DeleteUserButton";
+import { usernameToEmail } from "@/lib/auth-helpers";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -17,6 +19,8 @@ export default async function AdminUsersPage() {
           <thead className="bg-paper text-ink/50 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">Nama</th>
+              <th className="text-left px-4 py-3">No. HP/WhatsApp</th>
+              <th className="text-left px-4 py-3">Email</th>
               <th className="text-left px-4 py-3">Peran</th>
               <th className="text-left px-4 py-3">KYC</th>
               <th className="text-left px-4 py-3">Saldo</th>
@@ -29,6 +33,8 @@ export default async function AdminUsersPage() {
             {users?.map((u) => (
               <tr key={u.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{u.full_name}</td>
+                <td className="px-4 py-3 text-ink/70">{u.phone || "-"}</td>
+                <td className="px-4 py-3 text-ink/50">{usernameToEmail(u.username)}</td>
                 <td className="px-4 py-3 capitalize">{u.role}</td>
                 <td className="px-4 py-3 capitalize">{u.kyc_status}</td>
                 <td className="px-4 py-3">{formatRupiah(u.wallet_balance)}</td>
@@ -43,7 +49,12 @@ export default async function AdminUsersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {u.role !== "admin" && <SuspendToggle userId={u.id} isSuspended={u.is_suspended} />}
+                  {u.role !== "admin" && (
+                    <div className="flex flex-col gap-1.5 items-start">
+                      <SuspendToggle userId={u.id} isSuspended={u.is_suspended} />
+                      <DeleteUserButton userId={u.id} username={u.username} />
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
