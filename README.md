@@ -202,6 +202,7 @@ Ditambahkan di atas fondasi awal:
 - `supabase/migrations/0008_admin_chat.sql` — dashboard admin untuk chat & sengketa.
 - `supabase/migrations/0009_push_notifications.sql` — push notification untuk chat.
 - `supabase/migrations/0010_pre_deal_chat.sql` — kolom `listing_id`/`initiator_id` di `conversations`, RPC `start_listing_chat`, chat pra-order untuk listing marketplace.
+- `supabase/migrations/0011_fix_conversation_members_recursion.sql` — **WAJIB**: memperbaiki bug "infinite recursion detected in policy for relation conversation_members" (policy SELECT lama query ke tabel dirinya sendiri). Tanpa ini, tap ke chat manapun akan gagal terbuka.
 
 ⚠️ **Kalau menu Chat kebuka lalu langsung "mental" balik ke daftar chat (loading terus tanpa pernah menampilkan chat box):** hampir pasti karena migration `0006`–`0010` di atas **belum pernah dijalankan** di project Supabase produksi (redeploy Vercel TIDAK menjalankan migration secara otomatis — itu terpisah dari deployment aplikasi). Jalankan satu per satu lewat **Supabase Dashboard → SQL Editor** sesuai urutan nomornya, lalu reload schema cache dengan menjalankan:
 ```sql
