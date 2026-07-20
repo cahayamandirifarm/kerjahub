@@ -28,11 +28,14 @@ export default function AdminTopupRequestsPage() {
   async function load() {
     let query = supabase
       .from("topup_requests")
-      .select("*, profiles(full_name, username)")
+      .select("*, profiles!topup_requests_user_id_fkey(full_name, username)")
       .order("created_at", { ascending: false })
       .limit(100);
     if (filter === "pending") query = query.eq("status", "pending");
-    const { data } = await query;
+    const { data, error } = await query;
+    if (error) {
+      console.error("Gagal memuat permintaan top up:", error);
+    }
     setRows((data as any) || []);
   }
 
