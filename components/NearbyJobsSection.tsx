@@ -30,6 +30,11 @@ interface NearbyWorker {
   completed_jobs_count: number;
   is_online: boolean;
   distance_m: number;
+  job_id: string;
+  job_title: string;
+  job_category: string;
+  job_price: number;
+  job_estimated_duration: string;
 }
 
 type NearbyItem = NearbyJob | NearbyWorker;
@@ -140,17 +145,22 @@ export default function NearbyJobsSection() {
               </p>
             </Link>
           ) : (
-            <div key={`worker-${item.id}`} className="card p-4">
+            <Link
+              key={`worker-${item.id}`}
+              href={`/jobs/${item.job_id}`}
+              className="card block p-4 hover:-translate-y-0.5 transition"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-turquoise uppercase">
-                    <User size={12} /> Pekerja
+                    <User size={12} /> {item.job_category}
                   </span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <h3 className="font-display text-base font-semibold text-ink line-clamp-1">
-                      {item.full_name}
-                    </h3>
-                    {item.is_online && <span className="w-2 h-2 rounded-full bg-turquoise shrink-0" />}
+                  <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">
+                    {item.job_title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
+                    {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
                   </div>
                 </div>
                 <span className="badge-stage stage-terbuka shrink-0">Pekerja</span>
@@ -161,6 +171,9 @@ export default function NearbyJobsSection() {
                 </span>
                 {item.district && <span>{item.district}</span>}
               </div>
+              <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
+                {formatRupiah(item.job_price)}
+              </p>
               {item.skills && item.skills.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {item.skills.map((s) => (
@@ -179,7 +192,7 @@ export default function NearbyJobsSection() {
                   <CheckCircle2 size={12} /> {item.completed_jobs_count} pekerjaan selesai
                 </span>
               </div>
-            </div>
+            </Link>
           )
         )}
       </div>
