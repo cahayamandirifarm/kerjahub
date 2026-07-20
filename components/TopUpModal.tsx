@@ -70,6 +70,8 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => setCopied(null), 1500);
   }
 
+  const hasBankTransfer = Boolean(settings?.bank_name?.trim() && settings?.account_number?.trim());
+
   return (
     <div className="fixed inset-0 z-[200] bg-ink/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl max-h-[92vh] overflow-y-auto">
@@ -125,24 +127,33 @@ export default function TopUpModal({ onClose }: { onClose: () => void }) {
                 </p>
               </div>
 
-              <div className="card p-4">
-                <p className="text-xs text-ink/50 mb-1">Transfer ke:</p>
-                <p className="font-display text-lg font-semibold uppercase">{settings.bank_name}</p>
-                <p className="text-ink/80">{settings.account_number}</p>
-                <p className="text-sm text-ink/50">a.n {settings.account_holder}</p>
-                <button
-                  onClick={() => copyText(settings.account_number, "account")}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-turquoise mt-2"
-                >
-                  {copied === "account" ? <Check size={14} /> : <Copy size={14} />}
-                  {copied === "account" ? "Tersalin!" : "Salin Nomor Rekening"}
-                </button>
-              </div>
+              {hasBankTransfer && (
+                <div className="card p-4">
+                  <p className="text-xs text-ink/50 mb-1">Transfer ke:</p>
+                  <p className="font-display text-lg font-semibold uppercase">{settings.bank_name}</p>
+                  <p className="text-ink/80">{settings.account_number}</p>
+                  <p className="text-sm text-ink/50">a.n {settings.account_holder}</p>
+                  <button
+                    onClick={() => copyText(settings.account_number, "account")}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-turquoise mt-2"
+                  >
+                    {copied === "account" ? <Check size={14} /> : <Copy size={14} />}
+                    {copied === "account" ? "Tersalin!" : "Salin Nomor Rekening"}
+                  </button>
+                </div>
+              )}
 
               {settings.qris_image_url ? (
                 <div className="card p-4 text-center">
                   <img src={settings.qris_image_url} alt="QRIS" className="w-48 h-48 object-contain mx-auto" />
-                  <p className="text-xs text-ink/40 mt-2">Atau scan QRIS di atas</p>
+                  <p className="text-xs text-ink/40 mt-2">
+                    {hasBankTransfer ? "Atau scan QRIS di atas" : "Scan QRIS di atas untuk membayar"}
+                  </p>
+                </div>
+              ) : !hasBankTransfer ? (
+                <div className="card p-4 text-center text-xs text-ink/40 flex flex-col items-center gap-1">
+                  <QrCode size={24} />
+                  Metode pembayaran belum diatur admin
                 </div>
               ) : (
                 <div className="card p-4 text-center text-xs text-ink/40 flex flex-col items-center gap-1">
