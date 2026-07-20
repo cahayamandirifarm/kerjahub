@@ -34,7 +34,9 @@ import {
   Loader2,
   Check,
   CheckCheck,
-  ExternalLink
+  ExternalLink,
+  Briefcase,
+  ShoppingBag
 } from "lucide-react";
 import clsx from "clsx";
 
