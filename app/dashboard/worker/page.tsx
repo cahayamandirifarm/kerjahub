@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
 import { Wallet, ArrowDownToLine, Landmark, History, Briefcase, Plus } from "lucide-react";
+import JobPostingActions from "@/components/JobPostingActions";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -36,7 +37,7 @@ export default async function WorkerDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Dasbor Pencari Kerja</h1>
         <Link href="/dashboard/employer" className="text-sm font-semibold text-turquoise">
-          Lihat sisi Pemberi Kerja &rarr;
+          Semua postingan saya &rarr;
         </Link>
       </div>
 
@@ -110,6 +111,9 @@ export default async function WorkerDashboard() {
                   <Link href={`/dashboard/employer/applicants/${job.id}`} className="text-sm font-semibold text-turquoise">
                     Kelola
                   </Link>
+                </div>
+                <div className="mt-3 pt-3 border-t border-line/60">
+                  <JobPostingActions jobId={job.id} title={job.title} isActive={job.is_active} editable={job.stage === "terbuka"} />
                 </div>
               </div>
             ))}
