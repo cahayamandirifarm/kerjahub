@@ -20,6 +20,8 @@ interface Row {
   note: string | null;
   counterpart_name: string | null;
   created_at: string;
+  fee_amount: number | null;
+  net_amount: number | null;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -136,6 +138,12 @@ export default function RiwayatTransaksiPage() {
                 {r.counterpart_name && <span className="text-ink/40 font-normal"> — {r.counterpart_name}</span>}
               </p>
               <p className="font-display text-lg font-semibold text-gold-dark">{formatRupiah(r.amount)}</p>
+              {r.tx_type === "penarikan" && r.net_amount != null && (
+                <p className="text-xs text-turquoise-dark font-semibold">
+                  Nominal bersih diterima: {formatRupiah(r.net_amount)}
+                  {r.fee_amount != null && <span className="text-ink/40 font-normal"> (fee {formatRupiah(r.fee_amount)})</span>}
+                </p>
+              )}
               {r.note && <p className="text-xs text-ink/40 mt-1">{r.note}</p>}
             </div>
             <span className={`badge-stage shrink-0 ${STATUS_CLASS[r.status]}`}>{STATUS_LABEL[r.status]}</span>

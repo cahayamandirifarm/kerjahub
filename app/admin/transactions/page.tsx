@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AdminTxActionButtons from "@/components/AdminTxActionButtons";
+import { X, Landmark } from "lucide-react";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -19,6 +20,11 @@ interface Row {
   user_name: string | null;
   counterpart_name: string | null;
   created_at: string;
+  fee_amount: number | null;
+  net_amount: number | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_holder: string | null;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -47,11 +53,58 @@ const FILTERS: { key: "menunggu" | "semua"; label: string }[] = [
   { key: "semua", label: "Semua" }
 ];
 
+function WithdrawDetailModal({ row, onClose }: { row: Row; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card w-full max-w-sm p-5 bg-white" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-lg font-semibold flex items-center gap-2">
+            <Landmark size={18} className="text-turquoise" /> Data Penarikan
+          </h3>
+          <button onClick={onClose} className="text-ink/40 hover:text-ink">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-3 text-sm">
+          <div>
+            <p className="text-ink/40 text-xs">Pemohon</p>
+            <p className="font-semibold">{row.user_name ?? "-"}</p>
+          </div>
+          <div className="bg-paper rounded-xl p-3 space-y-1">
+            <p className="text-ink/40 text-xs">Rekening Bank / E-Wallet Tujuan</p>
+            <p className="font-semibold">{row.bank_name || "-"}</p>
+            <p>{row.bank_account_number || "-"}</p>
+            <p className="text-ink/60">a.n. {row.bank_account_holder || "-"}</p>
+          </div>
+          <div className="border-t border-line pt-3 space-y-1">
+            <div className="flex justify-between">
+              <span className="text-ink/60">Nominal diajukan</span>
+              <span className="font-semibold">{formatRupiah(row.amount)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink/60">Biaya admin platform</span>
+              <span className="font-semibold text-clay">- {formatRupiah(row.fee_amount ?? 0)}</span>
+            </div>
+            <div className="flex justify-between text-base border-t border-line pt-2 mt-1">
+              <span className="font-semibold">Nominal bersih ditransfer</span>
+              <span className="font-display font-bold text-turquoise-dark">{formatRupiah(row.net_amount ?? row.amount)}</span>
+            </div>
+          </div>
+          <p className="text-xs text-ink/40 pt-1">
+            Transfer manual sejumlah nominal bersih di atas ke rekening/e-wallet tujuan, baru klik Terima pada baris transaksi ini.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminTransactionsPage() {
   const supabase = createClient();
   const [rows, setRows] = useState<Row[]>([]);
   const [filter, setFilter] = useState<"menunggu" | "semua">("menunggu");
   const [loading, setLoading] = useState(true);
+  const [detailRow, setDetailRow] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     // Sekalian jalankan pembatalan otomatis transaksi yang sudah
@@ -120,13 +173,25 @@ export default function AdminTransactionsPage() {
               </p>
               <p className="text-sm text-ink/60">{TYPE_LABEL[r.tx_type] ?? r.tx_type}</p>
               <p className="font-display text-lg font-semibold text-gold-dark">{formatRupiah(r.amount)}</p>
+              {r.tx_type === "penarikan" && r.net_amount != null && (
+                <p className="text-xs text-turquoise-dark font-semibold">Bersih: {formatRupiah(r.net_amount)}</p>
+              )}
               {r.note && <p className="text-xs text-ink/40 mt-1">{r.note}</p>}
               {r.proof_url ? (
-                <a href={r.proof_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-turquoise underline">
+                <a href={r.proof_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-turquoise underline block mt-1">
                   Lihat bukti transfer
                 </a>
               ) : (
-                r.status === "menunggu" && <p className="text-xs text-clay">Belum ada bukti transfer diunggah</p>
+                r.tx_type !== "penarikan" &&
+                r.status === "menunggu" && <p className="text-xs text-clay mt-1">Belum ada bukti transfer diunggah</p>
+              )}
+              {r.tx_type === "penarikan" && (
+                <button
+                  onClick={() => setDetailRow(r)}
+                  className="text-xs font-semibold text-turquoise underline block mt-1"
+                >
+                  Lihat data penarikan
+                </button>
               )}
             </div>
             <div className="flex flex-col items-start md:items-end gap-2">
@@ -136,6 +201,8 @@ export default function AdminTransactionsPage() {
           </div>
         ))}
       </div>
+
+      {detailRow && <WithdrawDetailModal row={detailRow} onClose={() => setDetailRow(null)} />}
     </div>
   );
 }
