@@ -55,8 +55,8 @@ export default async function HomePage({
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href="/register" className="btn-primary">
-              Gabung Sekarang
+            <a href="#daftar-kerja" className="btn-primary">
+              Temukan Lowongan &amp; Pekerja Sekitar
             </a>
             <a href="/marketplace" className="btn-brand">
               Jelajahi Marketplace
@@ -83,7 +83,7 @@ export default async function HomePage({
 
       <NearbyJobsSection />
 
-      <section id="daftar-kerja" className="max-w-5xl mx-auto px-4">
+      <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>
         <div className="flex items-center gap-2 mb-3">
           <a
