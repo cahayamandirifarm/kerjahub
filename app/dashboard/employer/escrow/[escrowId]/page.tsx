@@ -1,17 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import EscrowPaymentForm from "./EscrowPaymentForm";
-
-function formatRupiah(n: number) {
-  return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  menunggu_pembayaran: "Menunggu Pembayaran",
-  menunggu_konfirmasi_admin: "Menunggu Konfirmasi Admin",
-  berhasil: "Pembayaran Berhasil",
-  ditolak: "Bukti Ditolak"
-};
+import EscrowPaymentModal from "./EscrowPaymentModal";
 
 export default async function EscrowPaymentPage({ params }: { params: { escrowId: string } }) {
   const supabase = createClient();
@@ -33,73 +22,23 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
   // (postingan jasa/mencari kerja), tergantung siapa yang seharusnya bayar.
   const isPayer = escrow.employer_id === user.id;
 
-  if (!isPayer) {
-    // Bukan pihak yang wajib bayar -- jangan tampilkan instruksi transfer,
-    // cukup info status supaya tidak membingungkan.
-    return (
-      <div className="max-w-lg mx-auto">
-        <h1 className="font-display text-2xl font-semibold mb-1">Status Pembayaran</h1>
-        <p className="text-sm text-ink/60 mb-6">{(escrow as any).jobs?.title}</p>
-        <div className="card p-5">
-          <p className="text-sm font-semibold mb-2">
-            Status: <span className="text-turquoise">{STATUS_LABEL[escrow.status] ?? escrow.status}</span>
-          </p>
-          <p className="text-sm text-ink/60">
-            {escrow.status === "menunggu_pembayaran" || escrow.status === "ditolak"
-              ? "Menunggu pihak lain menyelesaikan pembayaran escrow. Kamu akan dinotifikasi begitu dana diamankan."
-              : escrow.status === "menunggu_konfirmasi_admin"
-              ? "Bukti pembayaran sudah dikirim, menunggu verifikasi admin."
-              : "Dana sudah diamankan platform."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const { data: bank } = escrow.bank_account_id
     ? await supabase.from("bank_accounts").select("*").eq("id", escrow.bank_account_id).single()
     : { data: null };
 
+  const { data: settings } = await supabase
+    .from("payment_settings")
+    .select("qris_image_url")
+    .eq("id", 1)
+    .single();
+
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="font-display text-2xl font-semibold mb-1">Pembayaran Escrow</h1>
-      <p className="text-sm text-ink/60 mb-6">{(escrow as any).jobs?.title}</p>
-
-      {escrow.wallet_deducted > 0 && (
-        <div className="card p-4 mb-4 bg-turquoise/10 border border-turquoise/30">
-          <p className="text-sm text-ink/70">
-            <span className="font-semibold text-turquoise">{formatRupiah(escrow.wallet_deducted)}</span> sudah
-            otomatis terpotong dari saldo kamu untuk pekerjaan ini.
-            {escrow.total_amount > 0 && " Sisanya perlu ditransfer manual seperti di bawah."}
-          </p>
-        </div>
-      )}
-
-      {escrow.total_amount > 0 && (
-        <div className="card p-5 bg-turquoise-dark text-paper mb-4">
-          <p className="text-paper/70 text-sm">Total transfer (termasuk kode unik)</p>
-          <p className="font-display text-3xl font-semibold mt-1">{formatRupiah(escrow.total_amount)}</p>
-          <p className="text-xs text-paper/60 mt-2">
-            Sisa tagihan {formatRupiah(escrow.base_amount)} + kode unik {escrow.unique_code} — transfer angka
-            persis ini agar admin mudah mencocokkan mutasi rekening.
-          </p>
-        </div>
-      )}
-
-      {bank && escrow.total_amount > 0 && (
-        <div className="card p-5 mb-4">
-          <h2 className="font-display text-lg font-semibold mb-2">Transfer ke rekening ini</h2>
-          <p className="text-sm text-ink/70">
-            <span className="font-semibold">{bank.bank_name}</span>
-            <br />
-            {bank.account_number}
-            <br />
-            a.n. {bank.account_holder}
-          </p>
-        </div>
-      )}
-
-      <EscrowPaymentForm escrowId={escrow.id} status={escrow.status} proofUrl={escrow.proof_url} />
-    </div>
+    <EscrowPaymentModal
+      escrow={escrow as any}
+      jobTitle={(escrow as any).jobs?.title ?? ""}
+      isPayer={isPayer}
+      bank={bank}
+      qrisImageUrl={settings?.qris_image_url ?? null}
+    />
   );
 }
