@@ -33,6 +33,7 @@ const TYPE_LABEL: Record<string, string> = {
   bayar_kerja: "Pembayaran Kerja (Escrow)",
   terima_upah: "Upah Diterima Pekerja",
   komisi_platform: "Komisi Platform",
+  komisi_referral: "Komisi Referral (MLM)",
   refund: "Pengembalian Saldo",
   marketplace_digital: "Order Marketplace Digital"
 };

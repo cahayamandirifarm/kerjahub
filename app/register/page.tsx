@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usernameToEmail, isValidUsername, isValidPhone } from "@/lib/auth-helpers";
@@ -14,8 +14,15 @@ function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) setReferralCode(ref.toUpperCase());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,11 +55,26 @@ function RegisterForm() {
       return;
     }
 
+    const cleanReferralCode = referralCode.trim().toUpperCase();
+    if (cleanReferralCode) {
+      if (!/^[A-Z0-9]{6}$/.test(cleanReferralCode)) {
+        setLoading(false);
+        setError("Kode referral harus 6 karakter huruf/angka.");
+        return;
+      }
+      const { data: validRef } = await supabase.rpc("is_referral_code_valid", { p_code: cleanReferralCode });
+      if (validRef === false) {
+        setLoading(false);
+        setError("Kode referral tidak ditemukan. Kosongkan jika tidak punya kode.");
+        return;
+      }
+    }
+
     const { error: signUpError } = await supabase.auth.signUp({
       email: usernameToEmail(username),
       password,
       options: {
-        data: { username, phone }
+        data: { username, phone, referral_code: cleanReferralCode || null }
       }
     });
 
@@ -135,6 +157,17 @@ function RegisterForm() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
+          </div>
+          <div>
+            <label className="label">Kode Referral (opsional)</label>
+            <input
+              className="input uppercase"
+              maxLength={6}
+              placeholder="Contoh: AB12CD"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+            />
+            <p className="text-xs text-ink/40 mt-1">Punya kode referral dari teman? Isi di sini, kalau tidak ada boleh dikosongkan.</p>
           </div>
           {error && <p className="text-sm text-clay">{error}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
