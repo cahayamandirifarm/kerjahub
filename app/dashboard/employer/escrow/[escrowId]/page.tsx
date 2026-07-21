@@ -6,6 +6,13 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  menunggu_pembayaran: "Menunggu Pembayaran",
+  menunggu_konfirmasi_admin: "Menunggu Konfirmasi Admin",
+  berhasil: "Pembayaran Berhasil",
+  ditolak: "Bukti Ditolak"
+};
+
 export default async function EscrowPaymentPage({ params }: { params: { escrowId: string } }) {
   const supabase = createClient();
   const {
@@ -20,6 +27,34 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
     .single();
 
   if (!escrow) notFound();
+
+  // escrow.employer_id di sini berarti PAYER (pihak yang wajib bayar) --
+  // bisa jadi pembuat postingan (lowongan kerja biasa) ATAU pelamar
+  // (postingan jasa/mencari kerja), tergantung siapa yang seharusnya bayar.
+  const isPayer = escrow.employer_id === user.id;
+
+  if (!isPayer) {
+    // Bukan pihak yang wajib bayar -- jangan tampilkan instruksi transfer,
+    // cukup info status supaya tidak membingungkan.
+    return (
+      <div className="max-w-lg mx-auto">
+        <h1 className="font-display text-2xl font-semibold mb-1">Status Pembayaran</h1>
+        <p className="text-sm text-ink/60 mb-6">{(escrow as any).jobs?.title}</p>
+        <div className="card p-5">
+          <p className="text-sm font-semibold mb-2">
+            Status: <span className="text-turquoise">{STATUS_LABEL[escrow.status] ?? escrow.status}</span>
+          </p>
+          <p className="text-sm text-ink/60">
+            {escrow.status === "menunggu_pembayaran" || escrow.status === "ditolak"
+              ? "Menunggu pihak lain menyelesaikan pembayaran escrow. Kamu akan dinotifikasi begitu dana diamankan."
+              : escrow.status === "menunggu_konfirmasi_admin"
+              ? "Bukti pembayaran sudah dikirim, menunggu verifikasi admin."
+              : "Dana sudah diamankan platform."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const { data: bank } = escrow.bank_account_id
     ? await supabase.from("bank_accounts").select("*").eq("id", escrow.bank_account_id).single()
