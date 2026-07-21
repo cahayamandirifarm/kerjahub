@@ -16,9 +16,6 @@ export default function FinishPopupOverlay() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reposted, setReposted] = useState<string | null>(null);
 
-  if (loading || !popup) {
-    if (!reposted) return null;
-  }
   if (pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/admin")) return null;
 
   async function handleKeep() {
@@ -64,6 +61,8 @@ export default function FinishPopupOverlay() {
       </div>
     );
   }
+
+  if (loading || !popup) return null;
 
   return (
     // z-index sengaja di atas CompletionPopupOverlay (z-102) supaya popup ini
