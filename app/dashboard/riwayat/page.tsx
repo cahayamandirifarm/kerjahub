@@ -28,6 +28,7 @@ const TYPE_LABEL: Record<string, string> = {
   deposit: "Top Up Saldo",
   penarikan: "Penarikan Saldo",
   bayar_kerja: "Pembayaran Kerja (Escrow)",
+  terima_upah: "Upah Diterima",
   refund: "Pengembalian Saldo",
   marketplace_digital: "Order Marketplace Digital"
 };
