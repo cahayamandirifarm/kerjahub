@@ -15,15 +15,22 @@ export default async function JobProgressPage({ params }: { params: { jobId: str
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/dashboard/job/${params.jobId}`);
 
+  // CATATAN: "employer" di sini berarti PIHAK YANG BAYAR & BERHAK APPROVE
+  // (jobs.client_id) -- BUKAN selalu jobs.employer_id. Untuk lowongan kerja
+  // biasa keduanya sama (client_id = employer_id). Untuk postingan
+  // mencari kerja, jobs.employer_id justru pekerja yang mengerjakan (poster),
+  // sedangkan client_id adalah pelamar yang membayar & mengonfirmasi
+  // pekerjaan selesai -- jadi WAJIB pakai client_id di sini, bukan employer_id,
+  // supaya form konfirmasi tampil ke orang yang benar-benar berhak.
   const { data: job } = await supabase
     .from("jobs")
-    .select("*, employer:profiles!jobs_employer_id_fkey(full_name, phone), worker:profiles!jobs_assigned_worker_id_fkey(full_name, phone)")
+    .select("*, employer:profiles!jobs_client_id_fkey(full_name, phone), worker:profiles!jobs_assigned_worker_id_fkey(full_name, phone)")
     .eq("id", params.jobId)
     .single();
 
   if (!job) notFound();
 
-  const isEmployer = job.employer_id === user.id;
+  const isEmployer = job.client_id === user.id;
   const isWorker = job.assigned_worker_id === user.id;
   if (!isEmployer && !isWorker) redirect("/dashboard/employer");
 
