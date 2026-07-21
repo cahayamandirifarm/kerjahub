@@ -6,6 +6,7 @@ import { NotificationProvider } from "@/lib/NotificationContext";
 import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
+import ActiveJobPopup from "@/components/ActiveJobPopup";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ChatUnreadProvider>
               <OnlineStatus />
               <PWAInstall />
+              <ActiveJobPopup />
               {children}
             </ChatUnreadProvider>
           </NotificationProvider>

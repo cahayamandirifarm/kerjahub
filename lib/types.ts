@@ -25,6 +25,11 @@ export const STAGE_LABEL: Record<JobStage, string> = {
   dibatalkan: "Dibatalkan"
 };
 
+// Pekerjaan yang pembayarannya sudah dikonfirmasi admin (paid_at terisi)
+// tapi belum selesai/dibatalkan -- selama stage ini, popup "Pekerjaan Aktif"
+// otomatis tampil ke pemberi kerja & pekerja yang bersangkutan.
+export const ACTIVE_JOB_STAGES: JobStage[] = ["dana_diamankan", "dikerjakan", "menunggu_konfirmasi_selesai", "revisi"];
+
 export interface Profile {
   id: string;
   username: string;

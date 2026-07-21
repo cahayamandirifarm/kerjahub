@@ -25,6 +25,10 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
     ? await supabase.from("bank_accounts").select("*").eq("id", escrow.bank_account_id).single()
     : { data: null };
 
+  const { data: paymentSettings } = !bank
+    ? await supabase.from("payment_settings").select("qris_image_url").eq("id", 1).single()
+    : { data: null };
+
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="font-display text-2xl font-semibold mb-1">Pembayaran Escrow</h1>
@@ -49,6 +53,20 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
             <br />
             a.n. {bank.account_holder}
           </p>
+        </div>
+      )}
+
+      {!bank && paymentSettings?.qris_image_url && (
+        <div className="card p-5 mb-4 text-center">
+          <h2 className="font-display text-lg font-semibold mb-2">Bayar via QRIS</h2>
+          <img src={paymentSettings.qris_image_url} alt="QRIS" className="w-48 h-48 object-contain mx-auto" />
+          <p className="text-xs text-ink/40 mt-2">Scan QRIS ini untuk membayar sesuai nominal di atas</p>
+        </div>
+      )}
+
+      {!bank && !paymentSettings?.qris_image_url && (
+        <div className="card p-5 mb-4 text-center text-sm text-ink/50">
+          Belum ada metode pembayaran yang diatur admin. Hubungi admin untuk melanjutkan pembayaran.
         </div>
       )}
 

@@ -1,95 +1,103 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import Navbar from "@/components/Navbar";
 import StatusBadge from "@/components/StatusStepper";
-import WorkerActions from "./WorkerActions";
-import EmployerActions from "./EmployerActions";
+import { notFound } from "next/navigation";
+import { MapPin, Clock, ShieldCheck } from "lucide-react";
+import ApplyButton from "./ApplyButton";
+import ChatInquiryButton from "@/components/ChatInquiryButton";
 
 function formatRupiah(n: number) {
-  return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
+  return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default async function JobProgressPage({ params }: { params: { jobId: string } }) {
+export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=/dashboard/job/${params.jobId}`);
-
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("*, employer:profiles!jobs_employer_id_fkey(full_name, phone), worker:profiles!jobs_assigned_worker_id_fkey(full_name, phone)")
-    .eq("id", params.jobId)
-    .single();
+  const { data: job } = await supabase.from("jobs").select("*, profiles!jobs_employer_id_fkey(full_name, avatar_url, kyc_status)").eq("id", params.id).single();
 
   if (!job) notFound();
 
-  const isEmployer = job.employer_id === user.id;
-  const isWorker = job.assigned_worker_id === user.id;
-  if (!isEmployer && !isWorker) redirect("/dashboard/employer");
-
-  const { data: photos } = await supabase
-    .from("job_photos")
-    .select("*")
-    .eq("job_id", params.jobId)
-    .order("created_at", { ascending: true });
-
-  const { data: rating } = await supabase.from("ratings").select("*").eq("job_id", params.jobId).maybeSingle();
-
-  const employer = (job as any).employer;
-  const worker = (job as any).worker;
+  const employer = (job as any).profiles;
+  const isWorkerListing = job.posted_by_role === "worker";
 
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="flex items-start justify-between gap-3 mb-1">
-        <h1 className="font-display text-2xl font-semibold">{job.title}</h1>
-        <StatusBadge stage={job.stage} />
-      </div>
-      <p className="text-sm text-ink/60 mb-6">{formatRupiah(job.price)}</p>
+    <div className="min-h-screen pb-16">
+      <Navbar />
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-semibold text-turquoise uppercase tracking-wide">
+            {job.category}
+          </span>
+          {isWorkerListing && (
+            <span className="badge-stage bg-gold-light text-gold-dark text-[10px]">Menawarkan Jasa</span>
+          )}
+        </div>
+        <div className="flex items-start justify-between gap-3 mt-1">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-ink leading-snug">
+            {job.title}
+          </h1>
+          <StatusBadge stage={job.stage} />
+        </div>
 
-      <div className="card p-4 mb-4 text-sm text-ink/70">
-        <p>
-          <span className="font-semibold text-ink">Pemberi kerja:</span> {employer?.full_name}
-        </p>
-        {worker && (
-          <p className="mt-1">
-            <span className="font-semibold text-ink">Pekerja:</span> {worker.full_name}
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink/60">
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin size={15} /> {job.is_remote ? "Remote" : job.location}
+          </span>
+          {job.latitude && job.longitude && (
+            <a
+              href={`https://www.google.com/maps?q=${job.latitude},${job.longitude}`}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 font-semibold text-turquoise"
+            >
+              <MapPin size={15} /> Lihat Lokasi
+            </a>
+          )}
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={15} /> {job.estimated_duration}
+          </span>
+        </div>
+
+        <div className="card p-5 mt-6">
+          <span className="font-display text-3xl font-semibold text-gold-dark">
+            {formatRupiah(job.price)}
+          </span>
+          <p className="text-sm text-ink/50 mt-1">
+            {isWorkerListing
+              ? "Dana sudah aman ditahan platform begitu kerja sama disepakati — cair setelah pekerjaan selesai."
+              : "Dana sudah aman ditahan platform begitu pekerja diterima — cair setelah pekerjaan selesai."}
           </p>
-        )}
-      </div>
+        </div>
 
-      {photos && photos.length > 0 && (
-        <div className="card p-4 mb-4">
-          <h2 className="font-display text-base font-semibold mb-3">Foto Hasil Pekerjaan</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {photos.map((p) => (
-              <a key={p.id} href={p.url} target="_blank">
-                <img src={p.url} alt="" className="w-full aspect-square object-cover rounded-lg border border-line" />
-              </a>
-            ))}
+        <div className="card p-5 mt-4">
+          <h2 className="font-display text-lg font-semibold mb-2">Deskripsi</h2>
+          <p className="text-ink/70 whitespace-pre-line leading-relaxed">{job.description}</p>
+        </div>
+
+        {employer && (
+          <div className="card p-5 mt-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark">
+              {employer.full_name?.[0] ?? "?"}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-ink truncate">{employer.full_name}</p>
+              {employer.kyc_status === "terverifikasi" && (
+                <p className="text-xs text-turquoise inline-flex items-center gap-1">
+                  <ShieldCheck size={13} /> Identitas terverifikasi
+                </p>
+              )}
+            </div>
           </div>
+        )}
+
+        <div className="mt-6 space-y-3">
+          <ChatInquiryButton
+            kind="job"
+            refId={job.id}
+            ownerId={job.employer_id}
+            label={isWorkerListing ? "Tanya Dulu Sebelum Ajak Kerja Sama" : "Tanya Dulu Sebelum Melamar"}
+          />
+          <ApplyButton jobId={job.id} jobStage={job.stage} isWorkerListing={isWorkerListing} />
         </div>
-      )}
-
-      {rating && (
-        <div className="card p-4 mb-4">
-          <h2 className="font-display text-base font-semibold mb-2">Rating & Ulasan</h2>
-          <p className="text-gold-dark font-semibold">{"★".repeat(rating.rating)}{"☆".repeat(5 - rating.rating)}</p>
-          {rating.review && <p className="text-sm text-ink/70 mt-1">{rating.review}</p>}
-        </div>
-      )}
-
-      {isWorker && (
-        <WorkerActions
-          jobId={job.id}
-          stage={job.stage}
-          employerPhone={employer?.phone}
-          employerName={employer?.full_name}
-          jobTitle={job.title}
-          photoCount={photos?.length ?? 0}
-        />
-      )}
-
-      {isEmployer && <EmployerActions jobId={job.id} stage={job.stage} hasPhotos={(photos?.length ?? 0) > 0} />}
+      </div>
     </div>
   );
 }
