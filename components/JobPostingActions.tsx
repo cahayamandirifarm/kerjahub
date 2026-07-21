@@ -9,11 +9,14 @@ export default function JobPostingActions({
   jobId,
   title,
   isActive,
+  stage,
   editable
 }: {
   jobId: string;
   title: string;
   isActive: boolean;
+  /** status job saat ini -- dipakai buat menentukan cara "Hapus" bekerja */
+  stage?: string;
   /** false kalau job sudah berjalan (bukan status "terbuka") -- edit dimatikan */
   editable: boolean;
 }) {
@@ -35,11 +38,27 @@ export default function JobPostingActions({
   }
 
   async function handleDelete() {
-    const ok = window.confirm(`Hapus postingan "${title}" secara permanen? Tindakan ini tidak bisa dibatalkan.`);
+    const ok = window.confirm(`Hapus postingan "${title}"? Tindakan ini tidak bisa dibatalkan.`);
     if (!ok) return;
     setBusy(true);
     setError(null);
     const supabase = createClient();
+
+    // Job yang sudah "selesai" punya riwayat transaksi (upah/komisi) yang
+    // mereferensikan baris ini tanpa cascade, jadi tidak bisa dihapus
+    // permanen -- pakai soft delete (removed_by_poster) supaya postingan
+    // tetap hilang dari daftar, tapi riwayat transaksinya tetap aman.
+    if (stage === "selesai") {
+      const { error: rpcError } = await supabase.rpc("remove_job_posting", { p_job_id: jobId });
+      setBusy(false);
+      if (rpcError) {
+        setError(rpcError.message);
+        return;
+      }
+      router.refresh();
+      return;
+    }
+
     const { error: deleteError } = await supabase.from("jobs").delete().eq("id", jobId);
     setBusy(false);
     if (deleteError) {

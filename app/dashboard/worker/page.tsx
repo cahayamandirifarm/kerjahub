@@ -30,6 +30,7 @@ export default async function WorkerDashboard() {
     .select("*, applications(count)")
     .eq("employer_id", user.id)
     .eq("posted_by_role", "worker")
+    .eq("removed_by_poster", false)
     .order("created_at", { ascending: false });
 
   return (
@@ -119,7 +120,7 @@ export default async function WorkerDashboard() {
                   </Link>
                 </div>
                 <div className="mt-3 pt-3 border-t border-line/60">
-                  <JobPostingActions jobId={job.id} title={job.title} isActive={job.is_active} editable={job.stage === "terbuka"} />
+                  <JobPostingActions jobId={job.id} title={job.title} isActive={job.is_active} stage={job.stage} editable={job.stage === "terbuka"} />
                 </div>
               </div>
             ))}

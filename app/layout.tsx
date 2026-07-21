@@ -7,9 +7,11 @@ import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
 import { ActiveJobLockProvider } from "@/lib/ActiveJobLockContext";
 import { ApplicantPopupProvider } from "@/lib/ApplicantPopupContext";
 import { CompletionPopupProvider } from "@/lib/CompletionPopupContext";
+import { FinishPopupProvider } from "@/lib/FinishPopupContext";
 import ActiveJobOverlay from "@/components/ActiveJobOverlay";
 import ApplicantPopupOverlay from "@/components/ApplicantPopupOverlay";
 import CompletionPopupOverlay from "@/components/CompletionPopupOverlay";
+import FinishPopupOverlay from "@/components/FinishPopupOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
 
@@ -72,12 +74,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ActiveJobLockProvider>
                 <ApplicantPopupProvider>
                   <CompletionPopupProvider>
-                    <OnlineStatus />
-                    <PWAInstall />
-                    <ActiveJobOverlay />
-                    <ApplicantPopupOverlay />
-                    <CompletionPopupOverlay />
-                    {children}
+                    <FinishPopupProvider>
+                      <OnlineStatus />
+                      <PWAInstall />
+                      <ActiveJobOverlay />
+                      <ApplicantPopupOverlay />
+                      <CompletionPopupOverlay />
+                      <FinishPopupOverlay />
+                      {children}
+                    </FinishPopupProvider>
                   </CompletionPopupProvider>
                 </ApplicantPopupProvider>
               </ActiveJobLockProvider>
