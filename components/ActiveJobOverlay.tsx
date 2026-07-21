@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 import { STAGE_LABEL, JobStage } from "@/lib/types";
-import { MessageCircle, Briefcase, ExternalLink } from "lucide-react";
+import { MessageCircle, Briefcase, ExternalLink, ClipboardList } from "lucide-react";
 
 /**
  * Rute yang TETAP boleh diakses walau ada job aktif yang mengunci app:
@@ -104,9 +104,10 @@ export default function ActiveJobOverlay() {
 
           <button
             onClick={() => router.push(`/dashboard/job/${activeJob.job_id}`)}
-            className="w-full text-center text-xs font-semibold text-ink/50 py-2"
+            className="btn-secondary w-full inline-flex items-center justify-center gap-2"
           >
-            Lihat & kelola detail pekerjaan →
+            <ClipboardList size={16} />
+            Lihat & Kelola Detail Pekerjaan
           </button>
         </div>
       </div>
