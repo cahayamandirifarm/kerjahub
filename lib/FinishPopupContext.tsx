@@ -19,7 +19,7 @@ interface FinishPopupState {
   loading: boolean;
   processing: boolean;
   refresh: () => Promise<void>;
-  keepPosted: () => Promise<{ error?: string }>;
+  keepPosted: () => Promise<{ error?: string; newJobId?: string }>;
   removePosting: () => Promise<{ error?: string }>;
 }
 
@@ -71,11 +71,11 @@ export function FinishPopupProvider({ children }: { children: React.ReactNode })
   const keepPosted = useCallback(async () => {
     if (!popup) return {};
     setProcessing(true);
-    const { error } = await supabase.rpc("keep_job_posting", { p_job_id: popup.job_id });
+    const { data, error } = await supabase.rpc("keep_job_posting", { p_job_id: popup.job_id });
     setProcessing(false);
     if (error) return { error: error.message };
     await refresh();
-    return {};
+    return { newJobId: (data as string) || undefined };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popup, refresh]);
 

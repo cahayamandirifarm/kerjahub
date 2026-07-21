@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useFinishPopup } from "@/lib/FinishPopupContext";
 import { CheckCircle2, Wallet, Trash2, RefreshCw } from "lucide-react";
 
@@ -11,16 +11,24 @@ function formatRupiah(n: number) {
 export default function FinishPopupOverlay() {
   const { popup, loading, processing, keepPosted, removePosting } = useFinishPopup();
   const pathname = usePathname();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [reposted, setReposted] = useState<string | null>(null);
 
-  if (loading || !popup) return null;
+  if (loading || !popup) {
+    if (!reposted) return null;
+  }
   if (pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/admin")) return null;
 
   async function handleKeep() {
     setError(null);
     const res = await keepPosted();
-    if (res.error) setError(res.error);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setReposted(res.newJobId ?? "ok");
   }
 
   async function handleRemove() {
@@ -31,6 +39,30 @@ export default function FinishPopupOverlay() {
       return;
     }
     setConfirmingDelete(false);
+  }
+
+  if (reposted) {
+    return (
+      <div className="fixed inset-0 z-[103] bg-ink/70 backdrop-blur-sm flex items-center justify-center p-5 overflow-y-auto">
+        <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden my-auto p-6 text-center">
+          <CheckCircle2 size={36} className="text-turquoise-dark mx-auto" />
+          <h2 className="text-base font-extrabold mt-3">Postingan baru sudah tayang</h2>
+          <p className="text-sm text-ink/60 mt-1">
+            Lowongan dengan detail yang sama sudah dibuka lagi dan tampil di beranda, siap menerima pelamar baru.
+          </p>
+          <div className="space-y-2.5 mt-5">
+            {reposted !== "ok" && (
+              <button onClick={() => router.push(`/jobs/${reposted}`)} className="btn-primary w-full !py-2.5 text-sm">
+                Lihat Postingan Baru
+              </button>
+            )}
+            <button onClick={() => setReposted(null)} className="btn-secondary w-full !py-2.5 text-sm">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -66,7 +98,7 @@ export default function FinishPopupOverlay() {
           )}
 
           <p className="text-sm text-ink/70 mt-4">
-            Apakah kamu ingin menghapus postingan ini, atau tetap membiarkannya diposting?
+            Apakah kamu ingin menghapus postingan ini, atau tetap posting sampai kamu hapus sendiri?
           </p>
 
           {error && <p className="text-sm text-clay mt-3">{error}</p>}
@@ -76,6 +108,9 @@ export default function FinishPopupOverlay() {
               <button onClick={handleKeep} disabled={processing} className="btn-primary w-full !py-2.5 text-sm flex items-center justify-center gap-1.5">
                 <RefreshCw size={15} /> {processing ? "Memproses..." : "Tetap Diposting"}
               </button>
+              <p className="text-[11px] text-ink/40 text-center -mt-1">
+                Lowongan yang sama akan dibuka lagi di beranda, siap menerima pelamar baru.
+              </p>
               <button
                 onClick={() => setConfirmingDelete(true)}
                 disabled={processing}
