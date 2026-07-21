@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
+import MarkNotificationsRead from "@/components/MarkNotificationsRead";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="min-h-screen pb-24">
+      <MarkNotificationsRead />
       <Navbar />
       <div className="max-w-lg mx-auto px-4 py-8">
         <h1 className="font-display text-2xl font-semibold mb-6">Notifikasi</h1>
