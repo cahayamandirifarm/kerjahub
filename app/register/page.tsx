@@ -80,10 +80,20 @@ function RegisterForm() {
 
     if (signUpError) {
       setLoading(false);
+      // Sengaja di-log lengkap ke console supaya penyebab asli kelihatan
+      // (sebelumnya pesan error dari Supabase dibuang & diganti teks generik,
+      // jadi penyebab gagal daftar tidak pernah terlihat).
+      // eslint-disable-next-line no-console
+      console.error("signUp error:", {
+        message: signUpError.message,
+        status: (signUpError as any).status,
+        code: (signUpError as any).code,
+        name: signUpError.name
+      });
       setError(
         signUpError.message.includes("registered")
           ? "Username sudah dipakai, coba yang lain."
-          : "Gagal mendaftar, coba lagi."
+          : `Gagal mendaftar: ${signUpError.message}`
       );
       return;
     }
