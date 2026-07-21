@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { formatChatTime, initials } from "@/lib/chat-helpers";
 import type { ConversationListItem } from "@/lib/types";
-import { Search, MessageCircle, Archive, AlertTriangle, Briefcase, ShoppingBag } from "lucide-react";
+import { Search, MessageCircle, Archive, AlertTriangle, Briefcase, ShoppingBag, Trash2 } from "lucide-react";
 import clsx from "clsx";
 
 export default function ChatListPage() {
@@ -18,6 +18,8 @@ export default function ChatListPage() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<ConversationListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(
     async (archived: boolean, search: string) => {
@@ -70,6 +72,19 @@ export default function ChatListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, tab]);
 
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const { error } = await supabase.rpc("delete_conversation_history", {
+      p_conversation_id: pendingDelete.conversation_id
+    });
+    setDeleting(false);
+    if (!error) {
+      setItems((prev) => prev.filter((c) => c.conversation_id !== pendingDelete.conversation_id));
+      setPendingDelete(null);
+    }
+  }
+
   return (
     <div className="min-h-screen pb-24">
       <Navbar />
@@ -118,11 +133,11 @@ export default function ChatListPage() {
           )}
 
           {items.map((c) => (
-            <Link
-              key={c.conversation_id}
-              href={`/chat/${c.conversation_id}`}
-              className="card p-3.5 flex items-center gap-3 hover:border-turquoise/50 transition-colors"
-            >
+            <div key={c.conversation_id} className="relative group">
+              <Link
+                href={`/chat/${c.conversation_id}`}
+                className="card p-3.5 flex items-center gap-3 hover:border-turquoise/50 transition-colors pr-12"
+              >
               <div className="relative shrink-0">
                 <div className="w-12 h-12 rounded-full bg-brand flex items-center justify-center text-white font-display font-bold overflow-hidden">
                   {c.other_avatar ? (
@@ -161,11 +176,54 @@ export default function ChatListPage() {
                   )}
                 </div>
               </div>
-            </Link>
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPendingDelete(c);
+                }}
+                aria-label="Hapus riwayat chat"
+                className="absolute top-1/2 -translate-y-1/2 right-3 p-2 rounded-full text-ink/30 hover:text-clay hover:bg-clay/10 transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           ))}
         </div>
       </div>
       <BottomNav />
+
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="card max-w-sm w-full p-5">
+            <h2 className="font-display text-lg font-semibold mb-1.5">Hapus riwayat chat?</h2>
+            <p className="text-sm text-ink/60 mb-5">
+              Percakapan dengan {pendingDelete.other_name || "pengguna ini"} akan dihapus dari daftar chat kamu. Pesan
+              tidak dihapus untuk lawan bicara, dan chat ini akan muncul lagi jika ada pesan baru.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-pill text-sm font-semibold bg-white border border-line text-ink/60"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded-pill text-sm font-semibold bg-clay text-white disabled:opacity-60"
+              >
+                {deleting ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
