@@ -27,8 +27,13 @@ export default async function AdminEscrowPage() {
               <p className="text-sm text-ink/50">{e.jobs?.title}</p>
               <p className="text-lg font-display font-semibold text-gold-dark">{formatRupiah(e.total_amount)}</p>
               <p className="text-xs text-ink/40">
-                Nilai kerja {formatRupiah(e.base_amount)} + kode unik {e.unique_code}
+                Sisa transfer {formatRupiah(e.base_amount)} + kode unik {e.unique_code}
               </p>
+              {e.wallet_deducted > 0 && (
+                <p className="text-xs text-turquoise font-semibold">
+                  {formatRupiah(e.wallet_deducted)} sudah terpotong otomatis dari saldo
+                </p>
+              )}
               {e.proof_url && (
                 <a href={e.proof_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
                   Lihat bukti transfer

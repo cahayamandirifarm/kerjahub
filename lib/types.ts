@@ -70,8 +70,9 @@ export interface EscrowPayment {
   base_amount: number;
   unique_code: number;
   total_amount: number;
+  wallet_deducted: number;
   bank_account_id: string | null;
-  status: "menunggu_pembayaran" | "menunggu_konfirmasi_admin" | "berhasil" | "ditolak";
+  status: "menunggu_pembayaran" | "menunggu_konfirmasi_admin" | "berhasil" | "ditolak" | "dibatalkan";
   proof_url: string | null;
   created_at: string;
 }

@@ -65,16 +65,28 @@ export default async function EscrowPaymentPage({ params }: { params: { escrowId
       <h1 className="font-display text-2xl font-semibold mb-1">Pembayaran Escrow</h1>
       <p className="text-sm text-ink/60 mb-6">{(escrow as any).jobs?.title}</p>
 
-      <div className="card p-5 bg-turquoise-dark text-paper mb-4">
-        <p className="text-paper/70 text-sm">Total transfer (termasuk kode unik)</p>
-        <p className="font-display text-3xl font-semibold mt-1">{formatRupiah(escrow.total_amount)}</p>
-        <p className="text-xs text-paper/60 mt-2">
-          Nilai pekerjaan {formatRupiah(escrow.base_amount)} + kode unik {escrow.unique_code} — transfer angka
-          persis ini agar admin mudah mencocokkan mutasi rekening.
-        </p>
-      </div>
+      {escrow.wallet_deducted > 0 && (
+        <div className="card p-4 mb-4 bg-turquoise/10 border border-turquoise/30">
+          <p className="text-sm text-ink/70">
+            <span className="font-semibold text-turquoise">{formatRupiah(escrow.wallet_deducted)}</span> sudah
+            otomatis terpotong dari saldo kamu untuk pekerjaan ini.
+            {escrow.total_amount > 0 && " Sisanya perlu ditransfer manual seperti di bawah."}
+          </p>
+        </div>
+      )}
 
-      {bank && (
+      {escrow.total_amount > 0 && (
+        <div className="card p-5 bg-turquoise-dark text-paper mb-4">
+          <p className="text-paper/70 text-sm">Total transfer (termasuk kode unik)</p>
+          <p className="font-display text-3xl font-semibold mt-1">{formatRupiah(escrow.total_amount)}</p>
+          <p className="text-xs text-paper/60 mt-2">
+            Sisa tagihan {formatRupiah(escrow.base_amount)} + kode unik {escrow.unique_code} — transfer angka
+            persis ini agar admin mudah mencocokkan mutasi rekening.
+          </p>
+        </div>
+      )}
+
+      {bank && escrow.total_amount > 0 && (
         <div className="card p-5 mb-4">
           <h2 className="font-display text-lg font-semibold mb-2">Transfer ke rekening ini</h2>
           <p className="text-sm text-ink/70">
