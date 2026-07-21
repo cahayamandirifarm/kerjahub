@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import AcceptButton from "./AcceptButton";
+import RejectButton from "./RejectButton";
 
 export default async function ApplicantsPage({ params }: { params: { jobId: string } }) {
   const supabase = createClient();
@@ -57,7 +58,10 @@ export default async function ApplicantsPage({ params }: { params: { jobId: stri
             <div className="mt-3 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase text-ink/40">{app.status}</span>
               {app.status === "menunggu" && job?.stage === "terbuka" && (
-                <AcceptButton applicationId={app.id} />
+                <div className="flex gap-2">
+                  <RejectButton applicationId={app.id} />
+                  <AcceptButton applicationId={app.id} />
+                </div>
               )}
               {app.status === "diterima" && (
                 <div className="flex gap-3">

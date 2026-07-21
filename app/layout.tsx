@@ -5,7 +5,9 @@ import { AuthProvider } from "@/lib/AuthContext";
 import { NotificationProvider } from "@/lib/NotificationContext";
 import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
 import { ActiveJobLockProvider } from "@/lib/ActiveJobLockContext";
+import { ApplicantPopupProvider } from "@/lib/ApplicantPopupContext";
 import ActiveJobOverlay from "@/components/ActiveJobOverlay";
+import ApplicantPopupOverlay from "@/components/ApplicantPopupOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
 
@@ -66,10 +68,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NotificationProvider>
             <ChatUnreadProvider>
               <ActiveJobLockProvider>
-                <OnlineStatus />
-                <PWAInstall />
-                <ActiveJobOverlay />
-                {children}
+                <ApplicantPopupProvider>
+                  <OnlineStatus />
+                  <PWAInstall />
+                  <ActiveJobOverlay />
+                  <ApplicantPopupOverlay />
+                  {children}
+                </ApplicantPopupProvider>
               </ActiveJobLockProvider>
             </ChatUnreadProvider>
           </NotificationProvider>
