@@ -49,32 +49,31 @@ export default function BankAccountPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="font-display text-2xl font-semibold mb-1">Data Rekening Bank / E-Wallet</h1>
+      <h1 className="font-display text-2xl font-semibold mb-1">Data Rekening Bank</h1>
       <p className="text-sm text-ink/60 mb-6">Digunakan untuk mencairkan penarikan saldo.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4 card p-5">
         <div>
-          <label className="label">Nama Bank / E-Wallet</label>
+          <label className="label">Nama Bank</label>
           <input
             className="input"
             required
-            placeholder="Contoh: BCA, atau DANA / OVO / GoPay untuk e-wallet"
+            placeholder="Contoh: BCA"
             value={form.bank_name}
             onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))}
           />
         </div>
         <div>
-          <label className="label">Nomor Rekening / Nomor E-Wallet</label>
+          <label className="label">Nomor Rekening</label>
           <input
             className="input"
             required
-            placeholder="Nomor rekening atau nomor HP e-wallet"
             value={form.bank_account_number}
             onChange={(e) => setForm((f) => ({ ...f, bank_account_number: e.target.value }))}
           />
         </div>
         <div>
-          <label className="label">Nama Pemilik Rekening / E-Wallet</label>
+          <label className="label">Nama Pemilik Rekening</label>
           <input
             className="input"
             required

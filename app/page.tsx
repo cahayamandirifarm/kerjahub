@@ -9,7 +9,6 @@ import BannerCarousel from "@/components/BannerCarousel";
 import { Job, JOB_CATEGORIES } from "@/lib/types";
 import { Search } from "lucide-react";
 import PostCTAButtons from "@/components/PostCTAButtons";
-import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 
 export const revalidate = 0;
 
@@ -56,13 +55,29 @@ export default async function HomePage({
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <ScrollToJobsButton />
+            <a href="#daftar-kerja" className="btn-primary">
+              Temukan Lowongan &amp; Pekerja Sekitar
+            </a>
             <a href="/marketplace" className="btn-brand">
               Jelajahi Marketplace
             </a>
           </div>
 
           <PostCTAButtons />
+
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Pekerja Terverifikasi", icon: "✓" },
+              { label: "Transaksi Aman", icon: "🔒" },
+              { label: "Komunikasi Mudah", icon: "💬" },
+              { label: "Pekerjaan Berkualitas", icon: "💼" }
+            ].map((f) => (
+              <div key={f.label} className="card-glass px-3 py-3 text-center">
+                <div className="text-lg mb-1">{f.icon}</div>
+                <p className="text-xs font-semibold text-ink/70 leading-tight">{f.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

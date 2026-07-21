@@ -7,16 +7,12 @@ function formatRupiah(n: number) {
 
 export default async function AdminDepositsPage() {
   const supabase = createClient();
-  const { data: deposits, error } = await supabase
+  const { data: deposits } = await supabase
     .from("transactions")
-    .select("*, profiles!transactions_profile_id_fkey(full_name)")
+    .select("*, profiles(full_name)")
     .eq("type", "deposit")
     .eq("status", "menunggu")
     .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Gagal memuat top up dompet lama:", error);
-  }
 
   return (
     <div>

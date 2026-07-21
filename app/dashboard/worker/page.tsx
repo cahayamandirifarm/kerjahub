@@ -51,7 +51,8 @@ export default async function WorkerDashboard() {
         <div className="flex flex-wrap gap-3 mt-4">
           <Link
             href="/dashboard/worker/withdraw"
-            className="btn-primary !px-4 !py-2 !text-sm !shadow-none gap-1"
+            className="btn-gold !px-4 !py-2 text-sm gap-1"
+            style={{ color: "#1C2321" }}
           >
             <ArrowDownToLine size={16} /> Tarik Saldo
           </Link>
@@ -61,13 +62,6 @@ export default async function WorkerDashboard() {
             style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
           >
             <Landmark size={16} /> Rekening Bank
-          </Link>
-          <Link
-            href="/dashboard/riwayat"
-            className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
-            style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
-          >
-            <History size={16} /> Riwayat Transaksi
           </Link>
         </div>
       </div>

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDistance } from "@/lib/geo-helpers";
 import { MapPin, Navigation, Star, CheckCircle2, Briefcase, User } from "lucide-react";
 import Link from "next/link";
-import PostCTAButtons from "@/components/PostCTAButtons";
 
 interface NearbyJob {
   kind: "job";
@@ -30,11 +29,6 @@ interface NearbyWorker {
   completed_jobs_count: number;
   is_online: boolean;
   distance_m: number;
-  job_id: string;
-  job_title: string;
-  job_category: string;
-  job_price: number;
-  job_estimated_duration: string;
 }
 
 type NearbyItem = NearbyJob | NearbyWorker;
@@ -97,7 +91,7 @@ export default function NearbyJobsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!enabled || !items) return null;
+  if (!enabled || !items || items.length === 0) return null;
 
   return (
     <section id="lowongan-terdekat" className="max-w-5xl mx-auto px-4 mb-8 scroll-mt-24">
@@ -105,16 +99,6 @@ export default function NearbyJobsSection() {
         <Navigation size={16} className="text-turquoise" />
         <h2 className="font-display text-lg font-semibold">Lowongan &amp; Pekerja Terdekat</h2>
       </div>
-
-      {items.length === 0 ? (
-        <div className="card p-8 text-center">
-          <p className="text-ink/60">Belum tersedia lowongan &amp; pekerja sekitar.</p>
-          <p className="font-display font-semibold text-ink mt-1">Pasang Lowongan &amp; Pekerja Sekarang</p>
-          <div className="flex justify-center">
-            <PostCTAButtons />
-          </div>
-        </div>
-      ) : (
       <div className="grid sm:grid-cols-2 gap-4">
         {items.map((item) =>
           item.kind === "job" ? (
@@ -145,22 +129,17 @@ export default function NearbyJobsSection() {
               </p>
             </Link>
           ) : (
-            <Link
-              key={`worker-${item.id}`}
-              href={`/jobs/${item.job_id}`}
-              className="card block p-4 hover:-translate-y-0.5 transition"
-            >
+            <div key={`worker-${item.id}`} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-turquoise uppercase">
-                    <User size={12} /> {item.job_category}
+                    <User size={12} /> Pekerja
                   </span>
-                  <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">
-                    {item.job_title}
-                  </h3>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
-                    {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <h3 className="font-display text-base font-semibold text-ink line-clamp-1">
+                      {item.full_name}
+                    </h3>
+                    {item.is_online && <span className="w-2 h-2 rounded-full bg-turquoise shrink-0" />}
                   </div>
                 </div>
                 <span className="badge-stage stage-terbuka shrink-0">Pekerja</span>
@@ -171,9 +150,6 @@ export default function NearbyJobsSection() {
                 </span>
                 {item.district && <span>{item.district}</span>}
               </div>
-              <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                {formatRupiah(item.job_price)}
-              </p>
               {item.skills && item.skills.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {item.skills.map((s) => (
@@ -192,11 +168,10 @@ export default function NearbyJobsSection() {
                   <CheckCircle2 size={12} /> {item.completed_jobs_count} pekerjaan selesai
                 </span>
               </div>
-            </Link>
+            </div>
           )
         )}
       </div>
-      )}
     </section>
   );
 }

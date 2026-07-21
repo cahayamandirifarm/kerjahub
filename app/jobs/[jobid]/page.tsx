@@ -10,9 +10,9 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage({ params }: { params: { jobid: string } }) {
   const supabase = createClient();
-  const { data: job } = await supabase.from("jobs").select("*, profiles!jobs_employer_id_fkey(full_name, avatar_url, kyc_status)").eq("id", params.id).single();
+  const { data: job } = await supabase.from("jobs").select("*, profiles!jobs_employer_id_fkey(full_name, avatar_url, kyc_status)").eq("id", params.jobid).single();
 
   if (!job) notFound();
 

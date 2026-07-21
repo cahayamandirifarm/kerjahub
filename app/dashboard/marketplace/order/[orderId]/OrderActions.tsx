@@ -104,16 +104,12 @@ export default function OrderActions({
       {status === "menunggu_pembayaran" && isBuyer && bankAccount && (
         <form onSubmit={handlePayment} className="card p-5 space-y-3">
           <p className="text-sm font-semibold text-ink">Metode Pembayaran</p>
-          {bankAccount.bank_name?.trim() && bankAccount.account_number?.trim() && (
-            <p className="text-sm text-ink/60">
-              Transfer ke <b>{bankAccount.bank_name}</b> {bankAccount.account_number} a.n {bankAccount.account_holder}
-            </p>
-          )}
+          <p className="text-sm text-ink/60">
+            Transfer ke <b>{bankAccount.bank_name}</b> {bankAccount.account_number} a.n {bankAccount.account_holder}
+          </p>
           {bankAccount.qris_image_url && (
             <div className="bg-paper rounded-xl p-3 text-center">
-              {bankAccount.bank_name?.trim() && bankAccount.account_number?.trim() && (
-                <p className="text-xs text-ink/50 mb-2">atau scan QRIS berikut</p>
-              )}
+              <p className="text-xs text-ink/50 mb-2">atau scan QRIS berikut</p>
               <img src={bankAccount.qris_image_url} alt="QRIS pembayaran" className="w-40 h-40 object-contain mx-auto rounded-lg border border-line" />
             </div>
           )}
