@@ -2,14 +2,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import SelfActionBlockedModal from "@/components/SelfActionBlockedModal";
 
 export default function ApplyButton({
   jobId,
   jobStage,
+  ownerId,
   isWorkerListing = false
 }: {
   jobId: string;
   jobStage: string;
+  ownerId: string;
   isWorkerListing?: boolean;
 }) {
   const router = useRouter();
@@ -17,6 +20,7 @@ export default function ApplyButton({
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showBlocked, setShowBlocked] = useState(false);
 
   async function handleApply() {
     setError(null);
@@ -31,6 +35,12 @@ export default function ApplyButton({
       return;
     }
 
+    // GATE: tidak boleh melamar/mengajak kerja sama ke postingan sendiri
+    if (user.id === ownerId) {
+      setShowBlocked(true);
+      return;
+    }
+
     setSending(true);
     const { error: insertError } = await supabase.from("applications").insert({
       job_id: jobId,
@@ -40,6 +50,12 @@ export default function ApplyButton({
     setSending(false);
 
     if (insertError) {
+      // Jaring pengaman kalau lolos dari pengecekan di atas tapi tertahan
+      // oleh RLS di database (mis. ownerId di client sempat tidak sinkron).
+      if (insertError.code === "42501") {
+        setShowBlocked(true);
+        return;
+      }
       setError(
         insertError.code === "23505"
           ? isWorkerListing
@@ -89,6 +105,12 @@ export default function ApplyButton({
       <button onClick={handleApply} disabled={sending} className="btn-primary w-full">
         {sending ? "Mengirim..." : isWorkerListing ? "Ajak Kerja Sama" : "Lamar Pekerjaan Ini"}
       </button>
+
+      <SelfActionBlockedModal
+        open={showBlocked}
+        message={`Tidak dapat melakukan aksi ini karena postingan ini adalah milik Anda sendiri.`}
+        onClose={() => setShowBlocked(false)}
+      />
     </div>
   );
 }

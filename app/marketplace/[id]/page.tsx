@@ -58,7 +58,7 @@ export default async function DigitalListingPage({ params }: { params: { id: str
 
         <div className="mt-6 space-y-3">
           <ChatInquiryButton kind="listing" refId={listing.id} ownerId={listing.seller_id} />
-          <BuyButton listingId={listing.id} status={listing.status} />
+          <BuyButton listingId={listing.id} status={listing.status} ownerId={listing.seller_id} />
         </div>
       </div>
     </div>

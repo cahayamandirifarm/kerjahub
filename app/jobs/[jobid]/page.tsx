@@ -95,7 +95,7 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
             ownerId={job.employer_id}
             label={isWorkerListing ? "Tanya Dulu Sebelum Ajak Kerja Sama" : "Tanya Dulu Sebelum Melamar"}
           />
-          <ApplyButton jobId={job.id} jobStage={job.stage} isWorkerListing={isWorkerListing} />
+          <ApplyButton jobId={job.id} jobStage={job.stage} ownerId={job.employer_id} isWorkerListing={isWorkerListing} />
         </div>
       </div>
     </div>
