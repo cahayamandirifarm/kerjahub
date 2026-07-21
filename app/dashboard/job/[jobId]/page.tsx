@@ -3,8 +3,6 @@ import { redirect, notFound } from "next/navigation";
 import StatusBadge from "@/components/StatusStepper";
 import WorkerActions from "./WorkerActions";
 import EmployerActions from "./EmployerActions";
-import JobContactCard from "@/components/JobContactCard";
-import { ACTIVE_JOB_STAGES } from "@/lib/types";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -36,8 +34,6 @@ export default async function JobProgressPage({ params }: { params: { jobId: str
     .order("created_at", { ascending: true });
 
   const { data: rating } = await supabase.from("ratings").select("*").eq("job_id", params.jobId).maybeSingle();
-
-  const { data: conversation } = await supabase.from("conversations").select("id").eq("job_id", params.jobId).maybeSingle();
 
   const employer = (job as any).employer;
   const worker = (job as any).worker;
@@ -80,16 +76,6 @@ export default async function JobProgressPage({ params }: { params: { jobId: str
           <p className="text-gold-dark font-semibold">{"★".repeat(rating.rating)}{"☆".repeat(5 - rating.rating)}</p>
           {rating.review && <p className="text-sm text-ink/70 mt-1">{rating.review}</p>}
         </div>
-      )}
-
-      {ACTIVE_JOB_STAGES.includes(job.stage) && (
-        <JobContactCard
-          jobTitle={job.title}
-          conversationId={conversation?.id ?? null}
-          counterpartName={isWorker ? employer?.full_name ?? null : worker?.full_name ?? null}
-          counterpartPhone={isWorker ? employer?.phone ?? null : worker?.phone ?? null}
-          counterpartRole={isWorker ? "Pemberi kerja" : "Pekerja"}
-        />
       )}
 
       {isWorker && (

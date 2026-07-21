@@ -7,12 +7,16 @@ function formatRupiah(n: number) {
 
 export default async function AdminWithdrawalsPage() {
   const supabase = createClient();
-  const { data: withdrawals } = await supabase
+  const { data: withdrawals, error } = await supabase
     .from("transactions")
-    .select("*, profiles(full_name, role)")
+    .select("*, profiles!transactions_profile_id_fkey(full_name, role)")
     .eq("type", "penarikan")
     .eq("status", "menunggu")
     .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Gagal memuat penarikan saldo:", error);
+  }
 
   return (
     <div>

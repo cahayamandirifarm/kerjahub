@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Home, LayoutDashboard, ShoppingBag, MessageCircle, Bell, User } from "lucide-react";
 import clsx from "clsx";
 import { useChatUnread } from "@/lib/ChatUnreadContext";
+import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 
 const ITEMS = [
   { href: "/", label: "Beranda", icon: Home },
@@ -17,12 +18,29 @@ const ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname();
   const { unreadChatCount } = useChatUnread();
+  const { activeJob } = useActiveJobLock();
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-glass border-t border-line/70 md:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around px-0.5 py-1.5">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+          // Selama ada pekerjaan aktif yang mengunci app, hanya menu Chat yang boleh dipakai
+          const locked = !!activeJob && href !== "/chat";
+
+          if (locked) {
+            return (
+              <div
+                key={href}
+                aria-disabled="true"
+                className="relative flex flex-col items-center gap-0.5 py-2 px-1.5 rounded-2xl text-[10px] font-semibold min-w-[48px] text-ink/20 cursor-not-allowed select-none"
+              >
+                <Icon size={19} strokeWidth={2} />
+                {label}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={href}

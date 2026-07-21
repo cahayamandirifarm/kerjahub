@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
-import { Wallet, Plus, ArrowDownToLine, Users, Store } from "lucide-react";
+import { Wallet, Plus, ArrowDownToLine, Users, Store, Landmark, History } from "lucide-react";
 import TopUpButton from "@/components/TopUpButton";
 import JobPostingActions from "@/components/JobPostingActions";
 import ListingPostingActions from "@/components/ListingPostingActions";
@@ -65,13 +65,27 @@ export default async function EmployerDashboard() {
           {formatRupiah(profile?.wallet_balance)}
         </p>
         <div className="flex flex-wrap gap-3 mt-4">
-          <TopUpButton className="btn-gold !px-4 !py-2 text-sm gap-1" />
+          <TopUpButton className="btn-primary !px-4 !py-2 !text-sm !shadow-none gap-1" />
           <Link
             href="/dashboard/employer/withdraw?tab=tarik"
             className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
             style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
           >
             <ArrowDownToLine size={16} /> Tarik Saldo
+          </Link>
+          <Link
+            href="/dashboard/employer/bank"
+            className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
+          >
+            <Landmark size={16} /> Rekening Bank
+          </Link>
+          <Link
+            href="/dashboard/riwayat"
+            className="rounded-full px-4 py-2 text-sm font-semibold inline-flex items-center gap-1"
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)" }}
+          >
+            <History size={16} /> Riwayat Transaksi
           </Link>
         </div>
       </div>

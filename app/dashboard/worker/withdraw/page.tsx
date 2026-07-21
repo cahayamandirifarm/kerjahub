@@ -44,9 +44,8 @@ export default function WorkerWithdrawPage() {
   }, []);
 
   const numAmount = Number(amount) || 0;
-  const biayaAdmin = 10000;
-  const biayaTarik = Math.round(numAmount * 0.05);
-  const diterima = numAmount > 0 ? numAmount - biayaAdmin - biayaTarik : 0;
+  const biayaAdmin = Math.min(Math.round(numAmount * 0.02), 10000);
+  const diterima = numAmount > 0 ? numAmount - biayaAdmin : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,7 +76,7 @@ export default function WorkerWithdrawPage() {
 
       {!profile?.bank_account_number && (
         <div className="card p-4 bg-gold-light mb-4 text-sm flex items-center justify-between gap-3">
-          Rekening bank belum diisi.
+          Rekening bank/e-wallet belum diisi.
           <Link href="/dashboard/worker/bank" className="btn-secondary !px-3 !py-1.5 text-xs shrink-0">
             Isi sekarang
           </Link>
@@ -92,12 +91,8 @@ export default function WorkerWithdrawPage() {
         {numAmount > 0 && (
           <div className="bg-paper rounded-xl p-3 text-sm space-y-1">
             <div className="flex justify-between text-ink/60">
-              <span>Biaya admin</span>
+              <span>Biaya admin platform (2%, maks Rp10.000)</span>
               <span>{formatRupiah(biayaAdmin)}</span>
-            </div>
-            <div className="flex justify-between text-ink/60">
-              <span>Biaya penarikan (5%)</span>
-              <span>{formatRupiah(biayaTarik)}</span>
             </div>
             <div className="flex justify-between font-semibold text-ink border-t border-line pt-1 mt-1">
               <span>Estimasi diterima</span>
@@ -121,6 +116,9 @@ export default function WorkerWithdrawPage() {
             </div>
             <div className="text-right">
               <p className="font-semibold">{formatRupiah(tx.amount)}</p>
+              {tx.net_amount != null && (
+                <p className="text-xs text-turquoise-dark">Bersih: {formatRupiah(tx.net_amount)}</p>
+              )}
               <p className={`text-xs ${tx.status === "berhasil" ? "text-turquoise" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
                 {tx.status}
               </p>

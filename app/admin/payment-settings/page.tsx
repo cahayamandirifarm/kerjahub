@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Trash2 } from "lucide-react";
 
 export default function AdminPaymentSettingsPage() {
   const supabase = createClient();
   const [form, setForm] = useState({ bank_name: "", account_number: "", account_holder: "", qris_image_url: "" });
   const [qrisFile, setQrisFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,12 +49,9 @@ export default function AdminPaymentSettingsPage() {
     const { error } = await supabase
       .from("payment_settings")
       .update({
-        // Rekening bank boleh dikosongkan -- kalau kosong, tampilan user
-        // otomatis hanya menampilkan QRIS (lihat TopUpModal). Kolom di DB
-        // bertipe NOT NULL, jadi dikosongkan pakai string kosong, bukan null.
-        bank_name: form.bank_name.trim(),
-        account_number: form.account_number.trim(),
-        account_holder: form.account_holder.trim(),
+        bank_name: form.bank_name,
+        account_number: form.account_number,
+        account_holder: form.account_holder,
         qris_image_url,
         updated_at: new Date().toISOString()
       })
@@ -66,46 +63,46 @@ export default function AdminPaymentSettingsPage() {
   }
 
   async function handleClearBank() {
-    const ok = window.confirm(
-      "Kosongkan data rekening bank transfer? Setelah ini, halaman top up pengguna hanya akan menampilkan QRIS."
-    );
-    if (!ok) return;
-    setClearing(true);
-    setMessage(null);
-    const { error } = await supabase
-      .from("payment_settings")
-      .update({ bank_name: "", account_number: "", account_holder: "", updated_at: new Date().toISOString() })
-      .eq("id", 1);
-    setClearing(false);
-    if (error) {
-      setMessage("Gagal mengosongkan rekening.");
+    if (!confirm("Kosongkan data rekening bank? Metode transfer bank akan tersembunyi bagi pengguna dan hanya QRIS yang tampil.")) {
       return;
     }
-    setForm((f) => ({ ...f, bank_name: "", account_number: "", account_holder: "" }));
-    setMessage("Rekening transfer dikosongkan. Hanya QRIS yang akan tampil ke pengguna.");
+    setLoading(true);
+    setMessage(null);
+    const cleared = { bank_name: "", account_number: "", account_holder: "" };
+    const { error } = await supabase
+      .from("payment_settings")
+      .update({ ...cleared, updated_at: new Date().toISOString() })
+      .eq("id", 1);
+    setLoading(false);
+    if (error) {
+      setMessage("Gagal menghapus rekening.");
+      return;
+    }
+    setForm((f) => ({ ...f, ...cleared }));
+    setMessage("Rekening bank dikosongkan. Pengguna hanya akan melihat QRIS.");
   }
-
-  const hasBankInfo = form.bank_name.trim() || form.account_number.trim() || form.account_holder.trim();
 
   return (
     <div className="max-w-lg">
       <h1 className="font-display text-2xl font-semibold mb-1">Pengaturan Pembayaran</h1>
       <p className="text-sm text-ink/60 mb-6">
         Data ini otomatis dipakai di popup top up saldo pengguna — perubahan langsung berlaku. Rekening bank boleh
-        dikosongkan; kalau kosong, pengguna hanya akan melihat QRIS sebagai metode pembayaran.
+        dikosongkan: jika kosong, metode transfer bank akan disembunyikan bagi pengguna dan hanya gambar QRIS yang
+        ditampilkan.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4 card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm text-ink/70">Rekening Transfer Bank (opsional)</h2>
-          {hasBankInfo && (
+          <p className="label !mb-0">Rekening Bank (opsional)</p>
+          {(form.bank_name || form.account_number || form.account_holder) && (
             <button
               type="button"
               onClick={handleClearBank}
-              disabled={clearing}
-              className="text-xs font-semibold text-clay disabled:opacity-60"
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-clay hover:underline disabled:opacity-50"
             >
-              {clearing ? "Mengosongkan..." : "Kosongkan Rekening"}
+              <Trash2 size={14} />
+              Hapus Rekening
             </button>
           )}
         </div>
@@ -113,7 +110,7 @@ export default function AdminPaymentSettingsPage() {
           <label className="label">Nama Bank</label>
           <input
             className="input"
-            placeholder="Kosongkan kalau tidak menerima transfer bank"
+            placeholder="Kosongkan jika tidak dipakai"
             value={form.bank_name}
             onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))}
           />
@@ -122,6 +119,7 @@ export default function AdminPaymentSettingsPage() {
           <label className="label">Nomor Rekening</label>
           <input
             className="input"
+            placeholder="Kosongkan jika tidak dipakai"
             value={form.account_number}
             onChange={(e) => setForm((f) => ({ ...f, account_number: e.target.value }))}
           />
@@ -130,6 +128,7 @@ export default function AdminPaymentSettingsPage() {
           <label className="label">Atas Nama</label>
           <input
             className="input"
+            placeholder="Kosongkan jika tidak dipakai"
             value={form.account_holder}
             onChange={(e) => setForm((f) => ({ ...f, account_holder: e.target.value }))}
           />
@@ -141,6 +140,11 @@ export default function AdminPaymentSettingsPage() {
           )}
           <input className="input" type="file" accept="image/*" onChange={(e) => setQrisFile(e.target.files?.[0] || null)} />
         </div>
+        {!form.bank_name && !form.account_number && !form.account_holder && !form.qris_image_url && !qrisFile && (
+          <p className="text-xs text-clay">
+            Rekening bank dan QRIS masih kosong — pengguna tidak akan melihat metode pembayaran apa pun di popup top up.
+          </p>
+        )}
         {message && <p className="text-sm text-turquoise">{message}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Menyimpan..." : "Simpan Pengaturan"}

@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -94,6 +95,10 @@ function EmployerWalletContent() {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    if (!profile?.bank_account_number) {
+      setError("Lengkapi data rekening bank/e-wallet terlebih dahulu.");
+      return;
+    }
     setLoading(true);
     const { error: rpcError } = await supabase.rpc("request_withdrawal", { p_amount: Number(amount) });
     setLoading(false);
@@ -101,7 +106,7 @@ function EmployerWalletContent() {
       setError(rpcError.message);
       return;
     }
-    setMessage("Penarikan diajukan. Biaya admin Rp10.000 akan dipotong saat disetujui admin.");
+    setMessage("Penarikan diajukan. Biaya admin platform 2% (maks Rp10.000) akan dipotong saat disetujui admin.");
     setAmount("");
     loadData();
   }
@@ -158,13 +163,33 @@ function EmployerWalletContent() {
         </form>
       ) : (
         <form onSubmit={handleWithdraw} className="space-y-4 card p-5">
+          {!profile?.bank_account_number && (
+            <div className="card p-4 bg-gold-light text-sm flex items-center justify-between gap-3">
+              Rekening bank/e-wallet belum diisi.
+              <Link href="/dashboard/employer/bank" className="btn-secondary !px-3 !py-1.5 text-xs shrink-0">
+                Isi sekarang
+              </Link>
+            </div>
+          )}
           <p className="text-sm text-ink/60">
-            Setiap penarikan dikenakan biaya admin <b>Rp10.000</b> per transaksi.
+            Setiap penarikan dikenakan biaya admin platform <b>2% dari nominal, maksimal Rp10.000</b>.
           </p>
           <div>
             <label className="label">Jumlah Penarikan (Rp)</label>
             <input className="input" type="number" min={10000} required value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
+          {Number(amount) > 0 && (
+            <div className="bg-paper rounded-xl p-3 text-sm space-y-1">
+              <div className="flex justify-between text-ink/60">
+                <span>Biaya admin platform (2%, maks Rp10.000)</span>
+                <span>{formatRupiah(Math.min(Math.round(Number(amount) * 0.02), 10000))}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-ink border-t border-line pt-1 mt-1">
+                <span>Estimasi diterima</span>
+                <span>{formatRupiah(Math.max(Number(amount) - Math.min(Math.round(Number(amount) * 0.02), 10000), 0))}</span>
+              </div>
+            </div>
+          )}
           {error && <p className="text-sm text-clay">{error}</p>}
           {message && <p className="text-sm text-turquoise">{message}</p>}
           <button type="submit" disabled={loading} className="btn-gold w-full">
@@ -183,6 +208,9 @@ function EmployerWalletContent() {
             </div>
             <div className="text-right">
               <p className="font-semibold">{formatRupiah(tx.amount)}</p>
+              {tx.type === "penarikan" && tx.net_amount != null && (
+                <p className="text-xs text-turquoise-dark">Bersih: {formatRupiah(tx.net_amount)}</p>
+              )}
               <p className={`text-xs ${tx.status === "berhasil" ? "text-turquoise" : tx.status === "ditolak" ? "text-clay" : "text-gold-dark"}`}>
                 {tx.status}
               </p>

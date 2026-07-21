@@ -4,9 +4,10 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { NotificationProvider } from "@/lib/NotificationContext";
 import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
+import { ActiveJobLockProvider } from "@/lib/ActiveJobLockContext";
+import ActiveJobOverlay from "@/components/ActiveJobOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
-import ActiveJobPopup from "@/components/ActiveJobPopup";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -64,10 +65,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <NotificationProvider>
             <ChatUnreadProvider>
-              <OnlineStatus />
-              <PWAInstall />
-              <ActiveJobPopup />
-              {children}
+              <ActiveJobLockProvider>
+                <OnlineStatus />
+                <PWAInstall />
+                <ActiveJobOverlay />
+                {children}
+              </ActiveJobLockProvider>
             </ChatUnreadProvider>
           </NotificationProvider>
         </AuthProvider>

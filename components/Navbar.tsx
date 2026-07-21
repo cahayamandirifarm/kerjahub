@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useNotifications } from "@/lib/NotificationContext";
 import { useChatUnread } from "@/lib/ChatUnreadContext";
+import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 import { createClient } from "@/lib/supabase/client";
 import { Bell, LogOut, MessageCircle } from "lucide-react";
 
@@ -19,6 +20,7 @@ export default function Navbar() {
   const { user, profile, loading } = useAuth();
   const { unreadCount } = useNotifications();
   const { unreadChatCount } = useChatUnread();
+  const { activeJob } = useActiveJobLock();
   const router = useRouter();
 
   async function handleLogout() {
@@ -42,15 +44,25 @@ export default function Navbar() {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="px-3.5 py-2 rounded-full text-sm font-semibold text-ink/60 hover:text-turquoise-dark hover:bg-turquoise-light/60 transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              activeJob ? (
+                <span
+                  key={link.label}
+                  aria-disabled="true"
+                  className="px-3.5 py-2 rounded-full text-sm font-semibold text-ink/25 cursor-not-allowed select-none"
+                >
+                  {link.label}
+                </span>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="px-3.5 py-2 rounded-full text-sm font-semibold text-ink/60 hover:text-turquoise-dark hover:bg-turquoise-light/60 transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
         </div>
 
@@ -68,7 +80,7 @@ export default function Navbar() {
               )}
             </Link>
           )}
-          {!loading && user && (
+          {!loading && user && !activeJob && (
             <Link
               href="/notifications"
               className="relative p-2.5 rounded-full text-ink/60 hover:text-turquoise-dark hover:bg-turquoise-light/60 transition-colors"
@@ -86,7 +98,11 @@ export default function Navbar() {
             <>
               <Link
                 href="/dashboard/employer"
-                className="hidden md:flex items-center gap-2 rounded-full pl-1 pr-3.5 py-1 border border-line bg-white hover:border-turquoise transition-colors"
+                className={
+                  activeJob
+                    ? "hidden md:flex items-center gap-2 rounded-full pl-1 pr-3.5 py-1 border border-line bg-white opacity-40 pointer-events-none"
+                    : "hidden md:flex items-center gap-2 rounded-full pl-1 pr-3.5 py-1 border border-line bg-white hover:border-turquoise transition-colors"
+                }
               >
                 <div className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-xs font-display font-bold text-white overflow-hidden">
                   {profile?.avatar_url ? (
