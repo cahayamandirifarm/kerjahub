@@ -2,14 +2,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ConfirmModal from "../_components/ConfirmModal";
 
 export default function SuspendToggle({ userId, isSuspended }: { userId: string; isSuspended: boolean }) {
   const router = useRouter();
   const supabase = createClient();
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
-    if (!confirm(isSuspended ? "Aktifkan kembali akun ini?" : "Tangguhkan akun ini?")) return;
     setLoading(true);
     await supabase.from("profiles").update({ is_suspended: !isSuspended }).eq("id", userId);
     await supabase.rpc("write_audit", {
@@ -19,12 +20,31 @@ export default function SuspendToggle({ userId, isSuspended }: { userId: string;
       p_meta: {}
     });
     setLoading(false);
+    setOpen(false);
     router.refresh();
   }
 
   return (
-    <button onClick={toggle} disabled={loading} className="text-xs font-semibold text-turquoise">
-      {isSuspended ? "Aktifkan" : "Tangguhkan"}
-    </button>
+    <>
+      <button onClick={() => setOpen(true)} className="text-xs font-semibold text-turquoise">
+        {isSuspended ? "Aktifkan" : "Tangguhkan"}
+      </button>
+
+      {open && (
+        <ConfirmModal
+          title={isSuspended ? "Aktifkan Akun" : "Tangguhkan Akun"}
+          description={
+            isSuspended
+              ? "Akun ini akan bisa login dan menggunakan platform lagi seperti biasa."
+              : "Akun ini tidak akan bisa login sampai kamu aktifkan kembali."
+          }
+          confirmLabel={loading ? "Memproses..." : isSuspended ? "Ya, Aktifkan" : "Ya, Tangguhkan"}
+          confirmVariant={isSuspended ? "primary" : "danger"}
+          loading={loading}
+          onConfirm={toggle}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }
