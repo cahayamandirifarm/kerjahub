@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * CTA "Pasang Penawaran Kerja" & "Pasang Mencari Kerja" di beranda.
+ * CTA "Saya Butuh Pekerja" & "Saya Butuh Pekerjaan" di beranda.
  *
  * Sebelumnya tombol ini adalah <a href="/login"> statis — selalu melempar
  * ke halaman login walau user SUDAH login, sehingga terasa seperti akun
@@ -44,7 +44,7 @@ export default function PostCTAButtons() {
         onClick={() => goTo("/dashboard/employer/post-job", "employer")}
         className="btn-primary disabled:opacity-70"
       >
-        {checking === "employer" ? "Memuat..." : "Pasang Penawaran Kerja"}
+        {checking === "employer" ? "Memuat..." : "Saya Butuh Pekerja"}
       </button>
       <button
         type="button"
@@ -52,7 +52,7 @@ export default function PostCTAButtons() {
         onClick={() => goTo("/dashboard/worker/post-listing", "worker")}
         className="btn-secondary disabled:opacity-70"
       >
-        {checking === "worker" ? "Memuat..." : "Pasang Mencari Kerja"}
+        {checking === "worker" ? "Memuat..." : "Saya Butuh Pekerjaan"}
       </button>
       <a href="#daftar-kerja" className="btn-secondary !bg-transparent">
         Lihat lowongan

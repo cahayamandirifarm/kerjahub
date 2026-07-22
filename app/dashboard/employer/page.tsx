@@ -171,7 +171,7 @@ export default async function EmployerDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">Mencari Kerja Saya</h2>
         <Link href="/dashboard/worker/post-listing" className="btn-secondary !px-4 !py-2 text-sm gap-1">
-          <Plus size={16} /> Pasang Mencari Kerja
+          <Plus size={16} /> Saya Butuh Pekerjaan
         </Link>
       </div>
 

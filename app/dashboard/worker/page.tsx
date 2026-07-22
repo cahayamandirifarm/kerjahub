@@ -82,7 +82,7 @@ export default async function WorkerDashboard() {
 
       <Link href="/dashboard/worker/post-listing" className="card p-4 flex items-center justify-between gap-3 hover:-translate-y-0.5 transition">
         <div>
-          <p className="font-semibold text-ink">Pasang Mencari Kerja</p>
+          <p className="font-semibold text-ink">Saya Butuh Pekerjaan</p>
           <p className="text-sm text-ink/50">Tawarkan keahlianmu supaya ditemukan pemberi kerja di sekitarmu.</p>
         </div>
         <span className="btn-primary !px-3 !py-2 text-sm shrink-0 gap-1">
