@@ -109,7 +109,9 @@ Deno.serve(async (req) => {
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             payload
           );
+          console.log(`push OK -> profile ${s.profile_id}`);
         } catch (err: any) {
+          console.error(`push GAGAL -> profile ${s.profile_id}:`, err?.statusCode, err?.body || err?.message || err);
           if (err?.statusCode === 404 || err?.statusCode === 410) expiredIds.push(s.id);
         }
       })
