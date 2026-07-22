@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import SuspendToggle from "./SuspendToggle";
 import DeleteUserButton from "./DeleteUserButton";
+import EditBalanceButton from "./EditBalanceButton";
 import { usernameToEmail } from "@/lib/auth-helpers";
+
+// UUID akun superadmin — hanya akun ini yang boleh mengubah saldo pengguna.
+// Dicocokkan dengan pengecekan yang sama di fungsi database admin_adjust_balance,
+// jadi tombolnya memang hanya tampil untuk superadmin, dan kalaupun ada yang
+// mencoba memanggil RPC-nya langsung tanpa lewat tombol ini, tetap ditolak di database.
+const SUPERADMIN_ID = "7eb76528-7597-4bbb-9d5a-e166202b38f8";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -9,6 +16,11 @@ function formatRupiah(n: number) {
 
 export default async function AdminUsersPage() {
   const supabase = createClient();
+  const {
+    data: { user: currentUser }
+  } = await supabase.auth.getUser();
+  const isSuperadmin = currentUser?.id === SUPERADMIN_ID;
+
   const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
 
   return (
@@ -49,12 +61,21 @@ export default async function AdminUsersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {u.role !== "admin" && (
-                    <div className="flex flex-col gap-1.5 items-start">
-                      <SuspendToggle userId={u.id} isSuspended={u.is_suspended} />
-                      <DeleteUserButton userId={u.id} username={u.username} />
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-1.5 items-start">
+                    {u.role !== "admin" && (
+                      <>
+                        <SuspendToggle userId={u.id} isSuspended={u.is_suspended} />
+                        <DeleteUserButton userId={u.id} username={u.username} />
+                      </>
+                    )}
+                    {isSuperadmin && (
+                      <EditBalanceButton
+                        userId={u.id}
+                        username={u.username}
+                        currentBalance={u.wallet_balance}
+                      />
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
