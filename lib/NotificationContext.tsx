@@ -111,6 +111,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Sinkronkan badge angka merah di ikon app (seperti WhatsApp) setiap kali
+  // unreadCount berubah — baik nambah (notifikasi baru masuk saat app
+  // terbuka) maupun berkurang (user baca notifikasi). Ini pelengkap untuk
+  // badge yang di-set dari service worker saat push masuk ketika app
+  // tertutup — begitu app dibuka lagi, angka ini yang jadi sumber kebenaran.
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    if ("setAppBadge" in navigator) {
+      if (unreadCount > 0) {
+        (navigator as any).setAppBadge(unreadCount).catch(() => {});
+      } else {
+        (navigator as any).clearAppBadge().catch(() => {});
+      }
+    }
+  }, [unreadCount]);
+
   async function markAllRead() {
     if (!user) return;
     await supabase.from("notifications").update({ is_read: true }).eq("profile_id", user.id).eq("is_read", false);

@@ -75,19 +75,35 @@ Deno.serve(async (req) => {
 
     if (!subs?.length) return new Response("no subscriptions", { status: 200 });
 
-    const payload = JSON.stringify({
-      title: sender?.full_name || "Pesan baru",
-      body: snippetFor(message.message_type, message.content),
-      icon: sender?.avatar_url || "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      conversationId: conversation_id,
-      tag: `chat-${conversation_id}`
-    });
+    // Hitung total notifikasi belum dibaca PER penerima, supaya angka badge
+    // merah di ikon app (mirip WhatsApp) selalu akurat — bukan cuma "+1"
+    // per pesan, tapi total sesungguhnya (termasuk lamaran/pembayaran/dll
+    // yang belum dibaca juga, karena semua masuk ke tabel `notifications`).
+    const { data: unreadCounts } = await supabase
+      .from("notifications")
+      .select("profile_id")
+      .in("profile_id", recipientIds)
+      .eq("is_read", false);
+
+    const badgeCountByProfile = new Map<string, number>();
+    for (const row of unreadCounts ?? []) {
+      badgeCountByProfile.set(row.profile_id, (badgeCountByProfile.get(row.profile_id) ?? 0) + 1);
+    }
 
     const expiredIds: string[] = [];
 
     await Promise.all(
       subs.map(async (s) => {
+        const payload = JSON.stringify({
+          title: sender?.full_name || "Pesan baru",
+          body: snippetFor(message.message_type, message.content),
+          icon: sender?.avatar_url || "/icons/icon-192.png",
+          badge: "/icons/icon-192.png",
+          conversationId: conversation_id,
+          tag: `chat-${conversation_id}`,
+          badgeCount: badgeCountByProfile.get(s.profile_id) ?? 1
+        });
+
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },

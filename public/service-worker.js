@@ -107,6 +107,18 @@ self.addEventListener("push", (event) => {
         data: { conversationId: payload.conversationId },
         vibrate: [120, 60, 120]
       });
+
+      // Angka merah di ikon app (seperti WhatsApp) — server sudah menghitung
+      // total notifikasi belum dibaca milik penerima ini dan mengirimkannya
+      // lewat payload.badgeCount, supaya angkanya selalu akurat walau ada
+      // beberapa notifikasi menumpuk sebelum app dibuka lagi.
+      if ("setAppBadge" in self.navigator && typeof payload.badgeCount === "number") {
+        if (payload.badgeCount > 0) {
+          self.navigator.setAppBadge(payload.badgeCount).catch(() => {});
+        } else {
+          self.navigator.clearAppBadge().catch(() => {});
+        }
+      }
     })()
   );
 });
