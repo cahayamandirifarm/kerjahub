@@ -16,7 +16,8 @@ import {
   ShoppingBag,
   Image as ImageIcon,
   MessageCircle,
-  AlertTriangle
+  AlertTriangle,
+  Scale
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 
@@ -38,6 +39,7 @@ const NAV = [
   { href: "/admin/banners", label: "Banner Beranda", icon: ImageIcon },
   { href: "/admin/ratings", label: "Rating & Ulasan", icon: Star },
   { href: "/admin/transactions", label: "Monitoring Transaksi", icon: Receipt },
+  { href: "/admin/laporan-keuangan", label: "Laporan Keuangan", icon: Scale },
   { href: "/admin/settings", label: "Pengaturan Website", icon: Settings },
   { href: "/admin/audit-log", label: "Audit Log", icon: ShieldAlert }
 ];
