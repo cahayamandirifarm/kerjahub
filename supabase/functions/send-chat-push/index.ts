@@ -1,5 +1,12 @@
 // supabase/functions/send-chat-push/index.ts
 //
+// SATU-SATUNYA file entrypoint di folder ini. `supabase functions deploy
+// send-chat-push` selalu membaca index.ts -- JANGAN buat file lain
+// bernama mirip (mis. send-chat-push-index.ts) di folder ini, karena
+// file itu TIDAK PERNAH ikut ter-deploy dan cuma bikin bingung mana
+// versi yang sebenarnya aktif di production (pernah kejadian: perbaikan
+// sempat ditulis ke file duplikat yang salah, jadi tidak pernah berlaku).
+//
 // Dipanggil oleh 2 trigger Postgres (lewat pg_net):
 //   1. `trg_notify_push_for_message` (0009) — setiap pesan chat baru.
 //      body: { message_id, conversation_id, sender_id }
