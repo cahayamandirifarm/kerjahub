@@ -6,10 +6,12 @@ import { NotificationProvider } from "@/lib/NotificationContext";
 import { ChatUnreadProvider } from "@/lib/ChatUnreadContext";
 import { ActiveJobLockProvider } from "@/lib/ActiveJobLockContext";
 import { ApplicantPopupProvider } from "@/lib/ApplicantPopupContext";
+import { NegoOfferPopupProvider } from "@/lib/NegoOfferPopupContext";
 import { CompletionPopupProvider } from "@/lib/CompletionPopupContext";
 import { FinishPopupProvider } from "@/lib/FinishPopupContext";
 import ActiveJobOverlay from "@/components/ActiveJobOverlay";
 import ApplicantPopupOverlay from "@/components/ApplicantPopupOverlay";
+import NegoOfferPopupOverlay from "@/components/NegoOfferPopupOverlay";
 import CompletionPopupOverlay from "@/components/CompletionPopupOverlay";
 import FinishPopupOverlay from "@/components/FinishPopupOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
@@ -73,17 +75,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ChatUnreadProvider>
               <ActiveJobLockProvider>
                 <ApplicantPopupProvider>
+                  <NegoOfferPopupProvider>
                   <CompletionPopupProvider>
                     <FinishPopupProvider>
                       <OnlineStatus />
                       <PWAInstall />
                       <ActiveJobOverlay />
                       <ApplicantPopupOverlay />
+                      <NegoOfferPopupOverlay />
                       <CompletionPopupOverlay />
                       <FinishPopupOverlay />
                       {children}
                     </FinishPopupProvider>
                   </CompletionPopupProvider>
+                  </NegoOfferPopupProvider>
                 </ApplicantPopupProvider>
               </ActiveJobLockProvider>
             </ChatUnreadProvider>
