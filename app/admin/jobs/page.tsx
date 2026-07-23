@@ -23,6 +23,7 @@ export default async function AdminJobsPage() {
             <tr>
               <th className="text-left px-4 py-3">Judul</th>
               <th className="text-left px-4 py-3">Pemasang</th>
+              <th className="text-left px-4 py-3">Jenis Postingan</th>
               <th className="text-left px-4 py-3">Kategori</th>
               <th className="text-left px-4 py-3">Harga</th>
               <th className="text-left px-4 py-3">Status</th>
@@ -35,6 +36,17 @@ export default async function AdminJobsPage() {
               <tr key={j.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium max-w-xs truncate">{j.title}</td>
                 <td className="px-4 py-3">{j.profiles?.full_name}</td>
+                <td className="px-4 py-3">
+                  {j.posted_by_role === "worker" ? (
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-gold/15 text-gold-dark text-xs font-semibold whitespace-nowrap">
+                      Penerima Upah
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-turquoise/15 text-turquoise-dark text-xs font-semibold whitespace-nowrap">
+                      Pemberi Upah
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{j.category}</td>
                 <td className="px-4 py-3">{formatRupiah(j.price)}</td>
                 <td className="px-4 py-3">
