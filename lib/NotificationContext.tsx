@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import { getActiveConversationId } from "@/lib/push";
 import Link from "next/link";
-import { X, Bell, CheckCircle2, Wallet, MessageCircle, ShieldCheck, Briefcase, HandCoins } from "lucide-react";
+import { X, Bell, CheckCircle2, Wallet, MessageCircle, ShieldCheck, Briefcase, HandCoins, Megaphone } from "lucide-react";
 
 interface NotifRow {
   id: string;
@@ -53,7 +53,8 @@ const CATEGORY_ICON: Record<string, any> = {
   pekerjaan: CheckCircle2,
   chat: MessageCircle,
   kyc: ShieldCheck,
-  nego: HandCoins
+  nego: HandCoins,
+  pengumuman: Megaphone
 };
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
