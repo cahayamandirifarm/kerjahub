@@ -22,6 +22,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
   let query = supabase
     .from("jobs")
     .select("*, profiles!jobs_employer_id_fkey(full_name)")
+    .neq("stage", "selesai")
     .order("created_at", { ascending: false })
     .limit(100);
 

@@ -27,8 +27,9 @@ export default async function WorkerDashboard() {
 
   const { data: applications } = await supabase
     .from("applications")
-    .select("*, jobs(*)")
+    .select("*, jobs!inner(*)")
     .eq("worker_id", user.id)
+    .neq("jobs.stage", "selesai")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -38,6 +39,7 @@ export default async function WorkerDashboard() {
     .eq("employer_id", user.id)
     .eq("posted_by_role", "worker")
     .eq("removed_by_poster", false)
+    .neq("stage", "selesai")
     .order("created_at", { ascending: false });
 
   return (

@@ -46,6 +46,7 @@ export default async function EmployerDashboard() {
       .eq("employer_id", user.id)
       .eq("posted_by_role", "employer")
       .eq("removed_by_poster", false)
+      .neq("stage", "selesai")
       .order("created_at", { ascending: false }),
     supabase
       .from("jobs")
@@ -53,6 +54,7 @@ export default async function EmployerDashboard() {
       .eq("employer_id", user.id)
       .eq("posted_by_role", "worker")
       .eq("removed_by_poster", false)
+      .neq("stage", "selesai")
       .order("created_at", { ascending: false }),
     supabase.from("digital_listings").select("*").eq("seller_id", user.id).order("created_at", { ascending: false })
   ]);
@@ -126,6 +128,13 @@ export default async function EmployerDashboard() {
           <Plus size={16} /> Pasang Penawaran
         </Link>
       </div>
+      <p className="text-xs text-ink/40 -mt-3">
+        Postingan yang sudah selesai dipindahkan ke{" "}
+        <Link href="/dashboard/worker/history" className="font-semibold text-turquoise">
+          Riwayat Pekerjaan
+        </Link>
+        .
+      </p>
 
       <Link href="/dashboard/employer/nearby-workers" className="text-sm font-semibold text-turquoise inline-flex items-center gap-1">
         <Users size={14} /> Lihat pekerja terdekat

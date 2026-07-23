@@ -37,6 +37,16 @@ export default async function WorkerHistoryPage() {
     .select("id, job_id")
     .eq("worker_id", user.id);
 
+  // Postingan (baik "Penawaran Kerja" maupun "Tawaran Jasa") milik user ini yang
+  // sudah berstatus selesai -- ditampilkan di sini karena tidak lagi muncul di
+  // dasbor aktif (Dasbor Saya / Dasbor Pencari Kerja).
+  const { data: finishedPostings } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("employer_id", user.id)
+    .eq("stage", "selesai")
+    .order("completed_at", { ascending: false, nullsFirst: false });
+
   const totalEarnings = (earnings || []).reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
@@ -48,41 +58,70 @@ export default async function WorkerHistoryPage() {
         </p>
       </div>
 
-      <div className="space-y-3">
-        {(!applications || applications.length === 0) && (
-          <div className="card p-6 text-center text-ink/50 text-sm">Belum ada riwayat lamaran.</div>
-        )}
-        {applications?.map((app: any) => (
-          <div key={app.id} className="card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="font-semibold text-ink truncate">{app.jobs?.title}</h3>
-                <p className="text-sm text-ink/50">{formatJobPrice(app.jobs)}</p>
+      <div>
+        <h2 className="font-display text-lg font-semibold mb-3">Postingan Saya yang Selesai</h2>
+        <div className="space-y-3">
+          {(!finishedPostings || finishedPostings.length === 0) && (
+            <div className="card p-6 text-center text-ink/50 text-sm">Belum ada postingan yang selesai.</div>
+          )}
+          {finishedPostings?.map((job: any) => (
+            <div key={job.id} className="card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
+                  <h3 className="font-semibold text-ink truncate">{job.title}</h3>
+                  <p className="text-sm text-ink/50 mt-0.5">{formatJobPrice(job)}</p>
+                  {job.completed_at && (
+                    <p className="text-xs text-ink/40 mt-1">
+                      Selesai: {new Date(job.completed_at).toLocaleDateString("id-ID")}
+                    </p>
+                  )}
+                </div>
+                <StatusBadge stage={job.stage} />
               </div>
-              <StatusBadge stage={app.jobs?.stage} />
             </div>
-            {app.status === "diterima" && (
-              <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 mr-4 text-sm font-semibold text-turquoise">
-                Progres pekerjaan
-              </Link>
-            )}
-            {app.status === "diterima" && (
-              <Link
-                href={`/chat/${conversations?.find((c) => c.job_id === app.job_id)?.id ?? ""}`}
-                className="inline-block mt-2 text-sm font-semibold text-turquoise"
-              >
-                Buka Chat
-              </Link>
-            )}
-            {app.status === "diterima" && app.jobs?.stage === "selesai" && app.jobs?.profiles && (
-              <div className="mt-3 text-sm text-ink/60 border-t border-line pt-3">
-                <p className="font-semibold text-ink/80 mb-1">Kontak pemberi kerja</p>
-                <p>{app.jobs.profiles.full_name}</p>
-                {app.jobs.profiles.phone && <p>{app.jobs.profiles.phone}</p>}
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg font-semibold mb-3">Lamaran Saya</h2>
+        <div className="space-y-3">
+          {(!applications || applications.length === 0) && (
+            <div className="card p-6 text-center text-ink/50 text-sm">Belum ada riwayat lamaran.</div>
+          )}
+          {applications?.map((app: any) => (
+            <div key={app.id} className="card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-ink truncate">{app.jobs?.title}</h3>
+                  <p className="text-sm text-ink/50">{formatJobPrice(app.jobs)}</p>
+                </div>
+                <StatusBadge stage={app.jobs?.stage} />
               </div>
-            )}
-          </div>
-        ))}
+              {app.status === "diterima" && (
+                <Link href={`/dashboard/job/${app.job_id}`} className="inline-block mt-2 mr-4 text-sm font-semibold text-turquoise">
+                  Progres pekerjaan
+                </Link>
+              )}
+              {app.status === "diterima" && (
+                <Link
+                  href={`/chat/${conversations?.find((c) => c.job_id === app.job_id)?.id ?? ""}`}
+                  className="inline-block mt-2 text-sm font-semibold text-turquoise"
+                >
+                  Buka Chat
+                </Link>
+              )}
+              {app.status === "diterima" && app.jobs?.stage === "selesai" && app.jobs?.profiles && (
+                <div className="mt-3 text-sm text-ink/60 border-t border-line pt-3">
+                  <p className="font-semibold text-ink/80 mb-1">Kontak pemberi kerja</p>
+                  <p>{app.jobs.profiles.full_name}</p>
+                  {app.jobs.profiles.phone && <p>{app.jobs.profiles.phone}</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
