@@ -10,6 +10,7 @@ import { Job, JOB_CATEGORIES } from "@/lib/types";
 import { Search } from "lucide-react";
 import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
+import { categoryPostCopy } from "@/lib/category-copy";
 
 export const revalidate = 0;
 
@@ -77,7 +78,7 @@ export default async function HomePage({
               tipe === "employer" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
-            Lowongan Kerja
+            Saya Butuh Pekerja
           </a>
           <a
             href={`/?tipe=jasa${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
@@ -85,34 +86,27 @@ export default async function HomePage({
               tipe === "worker" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
-            Pekerja Menawarkan Jasa
+            Saya Butuh Pekerjaan
           </a>
         </div>
 
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 -mx-4 px-4">
-          <a
-            href={`/?tipe=${tipe === "worker" ? "jasa" : "kerja"}`}
-            className={`shrink-0 rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
-              !searchParams.kategori
-                ? "bg-ink text-white border-transparent"
-                : "bg-white text-ink/70 border-line"
-            }`}
-          >
-            Semua
-          </a>
-          {JOB_CATEGORIES.map((c) => (
-            <a
-              key={c}
-              href={`/?tipe=${tipe === "worker" ? "jasa" : "kerja"}&kategori=${encodeURIComponent(c)}`}
-              className={`shrink-0 rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
-                searchParams.kategori === c
-                  ? "bg-ink text-white border-transparent"
-                  : "bg-white text-ink/70 border-line"
-              }`}
-            >
-              {c}
-            </a>
-          ))}
+        <h3 className="font-display text-sm font-semibold text-ink/70 mb-3">Semua Kategori</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+          {JOB_CATEGORIES.map((c) => {
+            const copy = categoryPostCopy(c, tipe === "worker" ? "jasa" : "kerja");
+            return (
+              <a
+                key={c}
+                href={`/kategori?tipe=${tipe === "worker" ? "jasa" : "kerja"}&kategori=${encodeURIComponent(c)}`}
+                className="card p-4 hover:-translate-y-0.5 hover:shadow-soft transition-all duration-200"
+              >
+                <span className="text-[11px] font-bold text-turquoise-dark uppercase tracking-wide line-clamp-1">
+                  {copy.title}
+                </span>
+                <p className="text-sm text-ink/60 mt-1 leading-snug line-clamp-2">{copy.subtitle}</p>
+              </a>
+            );
+          })}
         </div>
 
         {(!jobs || jobs.length === 0) && (
