@@ -1,4 +1,4 @@
-const CACHE_NAME = "kerjahub-cache-v3-push";
+const CACHE_NAME = "kerjahub-cache-v4-push-visibility";
 const OFFLINE_URL = "/offline.html";
 
 // Aset dasar yang di-cache saat install (app shell).
@@ -93,18 +93,26 @@ self.addEventListener("push", (event) => {
     (async () => {
       // kalau ada tab yang fokus & sedang melihat percakapan yang sama, skip —
       // biar tidak dobel dengan toast in-app.
+      // kalau ada tab yang BENAR-BENAR TERLIHAT (bukan sekadar "focused" —
+      // di Android, status focused tab kadang belum langsung berubah saat
+      // app dipindah ke background tapi layar masih menyala) & sedang
+      // melihat percakapan yang sama, skip — biar tidak dobel dengan toast
+      // in-app.
       const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       const isViewingThisChat = clientsList.some(
-        (c) => c.focused && payload.conversationId && activeConversationId === payload.conversationId
+        (c) =>
+          c.visibilityState === "visible" &&
+          payload.conversationId &&
+          activeConversationId === payload.conversationId
       );
       if (isViewingThisChat) return;
 
-      await self.registration.showNotification(payload.title || "Pesan baru", {
+      await self.registration.showNotification(payload.title || "Notifikasi baru", {
         body: payload.body,
         icon: payload.icon || "/icons/icon-192.png",
         badge: payload.badge || "/icons/icon-192.png",
         tag: payload.tag,
-        data: { conversationId: payload.conversationId },
+        data: { url: payload.url || (payload.conversationId ? `/chat/${payload.conversationId}` : "/") },
         vibrate: [120, 60, 120]
       });
 
@@ -125,8 +133,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const conversationId = event.notification.data?.conversationId;
-  const targetUrl = conversationId ? `/chat/${conversationId}` : "/chat";
+  const targetUrl = event.notification.data?.url || "/";
 
   event.waitUntil(
     (async () => {
