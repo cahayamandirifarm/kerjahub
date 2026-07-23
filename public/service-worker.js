@@ -113,7 +113,12 @@ self.addEventListener("push", (event) => {
         badge: payload.badge || "/icons/icon-192.png",
         tag: payload.tag,
         data: { url: payload.url || (payload.conversationId ? `/chat/${payload.conversationId}` : "/") },
-        vibrate: [120, 60, 120]
+        // notifikasi pekerjaan (lamaran/pesanan/pembayaran) sengaja dibuat
+        // "menempel" di layar (tidak hilang sendiri dalam beberapa detik)
+        // dan getarnya lebih tegas, supaya tidak gampang lewat begitu saja —
+        // chat tetap pakai getar standar biar tidak berlebihan untuk obrolan biasa.
+        requireInteraction: payload.urgent !== false,
+        vibrate: payload.urgent === false ? [120, 60, 120] : [200, 100, 200, 100, 200]
       });
 
       // Angka merah di ikon app (seperti WhatsApp) — server sudah menghitung
