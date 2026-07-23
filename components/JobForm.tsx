@@ -13,6 +13,7 @@ type InitialJob = {
   location: string;
   is_remote: boolean;
   price: number;
+  is_nego: boolean;
   estimated_duration: string;
 };
 
@@ -32,6 +33,8 @@ const COPY: Record<Role, {
   locLabel: string;
   locHelp: string;
   priceLabel: string;
+  priceNegoLabel: string;
+  priceNegoHelp: string;
   durLabel: string;
   durPlaceholder: string;
   headingCreate: string;
@@ -51,6 +54,8 @@ const COPY: Record<Role, {
     locLabel: "Lokasi",
     locHelp: "Lokasi GPS membantu pekerja di sekitar menemukan pekerjaan ini lewat fitur \"Terdekat\".",
     priceLabel: "Tarif Harga (Rp)",
+    priceNegoLabel: "Perkiraan Harga Awal (Rp)",
+    priceNegoHelp: "Harga akhir ditentukan lewat nego di chat dengan pekerja yang tertarik, bukan harga ini.",
     durLabel: "Estimasi Waktu",
     durPlaceholder: "1 hari / 3 jam",
     headingCreate: "Saya Butuh Pekerja",
@@ -70,6 +75,8 @@ const COPY: Record<Role, {
     locLabel: "Area / Lokasi Kerja",
     locHelp: "Lokasi GPS membantu pemberi kerja di sekitar menemukanmu lewat fitur \"Terdekat\".",
     priceLabel: "Tarif yang Diminta (Rp)",
+    priceNegoLabel: "Perkiraan Tarif Awal (Rp)",
+    priceNegoHelp: "Harga akhir ditentukan lewat nego di chat dengan pemberi kerja yang tertarik, bukan harga ini.",
     durLabel: "Ketersediaan Waktu",
     durPlaceholder: "Setiap hari / Akhir pekan",
     headingCreate: "Saya Butuh Pekerjaan",
@@ -94,6 +101,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
     location: initial?.location ?? "",
     is_remote: initial?.is_remote ?? false,
     price: initial ? String(initial.price) : "",
+    is_nego: initial?.is_nego ?? false,
     estimated_duration: initial?.estimated_duration ?? ""
   });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -139,6 +147,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
       location: form.is_remote ? "Remote" : form.location,
       is_remote: form.is_remote,
       price: Number(form.price),
+      is_nego: form.is_nego,
       estimated_duration: form.estimated_duration
     };
     if (coords) {
@@ -216,6 +225,21 @@ export default function JobForm({ role, jobId, initial }: Props) {
           Bisa dikerjakan online / remote
         </label>
 
+        <label className="flex items-start gap-2 text-sm font-medium rounded-xl border border-line bg-paper px-3 py-3">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={form.is_nego}
+            onChange={(e) => update("is_nego", e.target.checked)}
+          />
+          <span>
+            Harga Nego (bukan harga tetap)
+            <span className="block text-xs font-normal text-ink/50 mt-0.5">
+              Peminat menanyakan & menawar harga langsung lewat chat sebelum {role === "worker" ? "mengajak kerja sama" : "melamar"}.
+            </span>
+          </span>
+        </label>
+
         {!form.is_remote && (
           <div>
             <label className="label">{c.locLabel}</label>
@@ -235,7 +259,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="label">{c.priceLabel}</label>
+            <label className="label">{form.is_nego ? c.priceNegoLabel : c.priceLabel}</label>
             <input
               className="input"
               type="number"
@@ -245,6 +269,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
               value={form.price}
               onChange={(e) => update("price", e.target.value)}
             />
+            {form.is_nego && <p className="text-xs text-ink/40 mt-1">{c.priceNegoHelp}</p>}
           </div>
           <div>
             <label className="label">{c.durLabel}</label>

@@ -40,6 +40,7 @@ export default async function EditJobPage({ params }: { params: { jobId: string 
         location: job.is_remote ? "" : job.location,
         is_remote: job.is_remote,
         price: job.price,
+        is_nego: job.is_nego,
         estimated_duration: job.estimated_duration
       }}
     />

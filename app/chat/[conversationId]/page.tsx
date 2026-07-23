@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { notifyActiveConversation } from "@/lib/push";
 import Navbar from "@/components/Navbar";
-import type { ChatMessage, ChatAttachment } from "@/lib/types";
+import type { ChatMessage, ChatAttachment, NegoOffer } from "@/lib/types";
+import { NEGO_QUICK_AMOUNTS } from "@/lib/types";
 import {
   CHAT_BUCKET,
   MAX_ATTACHMENT_MB,
@@ -36,7 +37,8 @@ import {
   CheckCheck,
   ExternalLink,
   Briefcase,
-  ShoppingBag
+  ShoppingBag,
+  Tags
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -55,6 +57,9 @@ interface ConversationInfo {
   is_dispute: boolean;
   contextUrl: string | null;
   contextLabel: string | null;
+  jobId: string | null;
+  jobIsNego: boolean;
+  jobStage: string | null;
 }
 
 const PAGE_SIZE = 30;
@@ -85,6 +90,12 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
   const [searchQuery, setSearchQuery] = useState("");
   const [otherReadStatus, setOtherReadStatus] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [negoOpen, setNegoOpen] = useState(false);
+  const [negoCustomAmount, setNegoCustomAmount] = useState("");
+  const [negoSending, setNegoSending] = useState(false);
+  const [negoError, setNegoError] = useState<string | null>(null);
+  const [negoRespondingId, setNegoRespondingId] = useState<string | null>(null);
+  const [negoOffersMap, setNegoOffersMap] = useState<Record<string, NegoOffer>>({});
   const otherIdRef = useRef<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -143,10 +154,16 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       // ke "Percakapan" tanpa link.
       let title = "Percakapan";
       let contextUrl: string | null = null;
+      let jobIsNego = false;
+      let jobStage: string | null = null;
       try {
         if (convRow.source_type === "job" && convRow.job_id) {
-          const { data } = await supabase.from("jobs").select("title").eq("id", convRow.job_id).single();
+          const { data } = await supabase.from("jobs").select("title, is_nego, stage").eq("id", convRow.job_id).single();
           if (data?.title) title = data.title;
+          if (data) {
+            jobIsNego = !!data.is_nego;
+            jobStage = data.stage;
+          }
           contextUrl = `/jobs/${convRow.job_id}`;
         } else if (convRow.source_type === "marketplace" && convRow.order_id) {
           const { data: order } = await supabase
@@ -183,7 +200,10 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         is_locked: convRow.is_locked,
         is_dispute: convRow.is_dispute,
         contextUrl,
-        contextLabel: convRow.source_type === "job" ? "Lihat lowongan" : "Lihat produk"
+        contextLabel: convRow.source_type === "job" ? "Lihat lowongan" : "Lihat produk",
+        jobId: convRow.job_id || null,
+        jobIsNego,
+        jobStage
       });
 
       const { data: members } = await supabase
@@ -209,7 +229,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
 
       const { data: msgs } = await supabase
         .from("messages")
-        .select("*, attachments(*)")
+        .select("*, attachments(*), nego_offers(*)")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
@@ -217,6 +237,13 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       const ordered = (msgs || []).slice().reverse() as ChatMessage[];
       setMessages(ordered);
       setHasMore((msgs || []).length === PAGE_SIZE);
+      setNegoOffersMap((prev) => {
+        const next = { ...prev };
+        ordered.forEach((m) => {
+          if (m.nego_offers) next[m.nego_offers.id] = m.nego_offers;
+        });
+        return next;
+      });
 
       if (otherId && ordered.length) {
         const { data: reads } = await supabase
@@ -248,6 +275,13 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
           const row = payload.new as ChatMessage;
           setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, attachments: [] }]));
           setTimeout(() => scrollToBottom(), 50);
+          if (row.nego_offer_id) {
+            const { data: offer } = await supabase.from("nego_offers").select("*").eq("id", row.nego_offer_id).single();
+            if (offer) {
+              setNegoOffersMap((prev) => ({ ...prev, [offer.id]: offer as NegoOffer }));
+              setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, nego_offers: offer as NegoOffer } : m)));
+            }
+          }
           if (row.sender_id !== userId) {
             await supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId });
           }
@@ -287,6 +321,23 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         (payload) => {
           const row = payload.new as any;
           setConv((prev) => (prev ? { ...prev, is_locked: row.is_locked, is_dispute: row.is_dispute } : prev));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "nego_offers", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const row = payload.new as NegoOffer;
+          setNegoOffersMap((prev) => ({ ...prev, [row.id]: row }));
+          setMessages((prev) => prev.map((m) => (m.nego_offer_id === row.id ? { ...m, nego_offers: row } : m)));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "jobs" },
+        (payload) => {
+          const row = payload.new as any;
+          setConv((prev) => (prev && prev.jobId === row.id ? { ...prev, jobIsNego: !!row.is_nego, jobStage: row.stage } : prev));
         }
       )
       .subscribe();
@@ -440,6 +491,45 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, deleted_at: new Date().toISOString() } : m)));
   }
 
+  // -------------------- nego harga --------------------
+  async function submitNegoOffer(amount: number) {
+    if (!amount || amount <= 0 || negoSending) return;
+    setNegoSending(true);
+    setNegoError(null);
+    const { error } = await supabase.rpc("send_nego_offer", {
+      p_conversation_id: conversationId,
+      p_amount: amount
+    });
+    setNegoSending(false);
+    if (error) {
+      setNegoError(error.message || "Gagal mengirim tawaran harga. Coba lagi.");
+      return;
+    }
+    setNegoOpen(false);
+    setNegoCustomAmount("");
+    setTimeout(() => scrollToBottom(), 100);
+  }
+
+  async function respondNego(offerId: string, accept: boolean) {
+    if (negoRespondingId) return;
+    setNegoRespondingId(offerId);
+    const { error } = await supabase.rpc("respond_nego_offer", { p_offer_id: offerId, p_accept: accept });
+    setNegoRespondingId(null);
+    if (error) {
+      alert(error.message || "Gagal merespons tawaran. Coba lagi.");
+    }
+  }
+
+  async function cancelNego(offerId: string) {
+    if (negoRespondingId) return;
+    setNegoRespondingId(offerId);
+    const { error } = await supabase.rpc("cancel_nego_offer", { p_offer_id: offerId });
+    setNegoRespondingId(null);
+    if (error) {
+      alert(error.message || "Gagal membatalkan tawaran. Coba lagi.");
+    }
+  }
+
   // -------------------- attachments --------------------
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -493,7 +583,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     const prevHeight = el?.scrollHeight ?? 0;
     const { data } = await supabase
       .from("messages")
-      .select("*, attachments(*)")
+      .select("*, attachments(*), nego_offers(*)")
       .eq("conversation_id", conversationId)
       .lt("created_at", messages[0].created_at)
       .order("created_at", { ascending: false })
@@ -501,6 +591,13 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     const older = (data || []).slice().reverse() as ChatMessage[];
     setMessages((prev) => [...older, ...prev]);
     setHasMore((data || []).length === PAGE_SIZE);
+    setNegoOffersMap((prev) => {
+      const next = { ...prev };
+      older.forEach((m) => {
+        if (m.nego_offers) next[m.nego_offers.id] = m.nego_offers;
+      });
+      return next;
+    });
     setLoadingOlder(false);
     if (otherIdRef.current && older.length) {
       const { data: reads } = await supabase
@@ -654,6 +751,18 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
             </a>
           </div>
         )}
+        {conv.jobIsNego && conv.jobStage === "terbuka" && !conv.is_locked && (
+          <div className="max-w-lg mx-auto px-3 pb-2.5">
+            <button
+              onClick={() => setNegoOpen((s) => !s)}
+              disabled={isBlocked}
+              className="w-full flex items-center gap-2 rounded-xl border border-turquoise/40 bg-turquoise-light/40 px-3 py-2 text-xs font-semibold text-turquoise-dark disabled:opacity-50"
+            >
+              <Tags size={14} className="shrink-0" />
+              <span className="flex-1 text-left">Postingan ini pakai harga Nego — ajukan tawaran harga</span>
+            </button>
+          </div>
+        )}
         {conv.is_locked && (
           <div className="bg-clay/10 text-clay text-xs font-semibold px-4 py-2 flex items-center gap-1.5">
             <AlertTriangle size={13} /> Sengketa sedang ditangani admin — riwayat percakapan terkunci sebagai bukti.
@@ -690,6 +799,11 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
             canModify={!conv.is_locked}
             getSignedUrl={attachmentSignedUrl}
             readStatus={otherReadStatus[m.id]}
+            negoOffer={m.nego_offer_id ? negoOffersMap[m.nego_offer_id] || m.nego_offers || null : null}
+            negoRespondingId={negoRespondingId}
+            onAcceptNego={(offerId) => respondNego(offerId, true)}
+            onRejectNego={(offerId) => respondNego(offerId, false)}
+            onCancelNego={(offerId) => cancelNego(offerId)}
           />
         ))}
         <div ref={bottomRef} />
@@ -726,6 +840,43 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
                 {em}
               </button>
             ))}
+          </div>
+        )}
+        {negoOpen && (
+          <div className="card p-3 mb-2 space-y-2.5">
+            <p className="text-xs font-semibold text-ink/70">Ajukan tawaran harga</p>
+            <div className="flex flex-wrap gap-1.5">
+              {NEGO_QUICK_AMOUNTS.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => submitNegoOffer(amt)}
+                  disabled={negoSending}
+                  className="px-3 py-1.5 rounded-pill border border-turquoise/40 text-xs font-semibold text-turquoise-dark hover:bg-turquoise-light/50 disabled:opacity-50"
+                >
+                  Rp{amt.toLocaleString("id-ID")}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={1000}
+                className="input flex-1 !py-2 text-sm"
+                placeholder="Isi nominal lainnya"
+                value={negoCustomAmount}
+                onChange={(e) => setNegoCustomAmount(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={negoSending || !negoCustomAmount || Number(negoCustomAmount) <= 0}
+                onClick={() => submitNegoOffer(Number(negoCustomAmount))}
+                className="btn-primary !px-3 !py-2 text-sm shrink-0"
+              >
+                {negoSending ? <Loader2 size={16} className="animate-spin" /> : "Kirim"}
+              </button>
+            </div>
+            {negoError && <p className="text-xs text-clay">{negoError}</p>}
           </div>
         )}
         <form onSubmit={sendMessage} className="flex items-end gap-1.5">
@@ -776,7 +927,12 @@ function MessageBubble({
   onReply,
   canModify,
   getSignedUrl,
-  readStatus
+  readStatus,
+  negoOffer,
+  negoRespondingId,
+  onAcceptNego,
+  onRejectNego,
+  onCancelNego
 }: {
   message: ChatMessage;
   isMine: boolean;
@@ -792,6 +948,11 @@ function MessageBubble({
   canModify: boolean;
   getSignedUrl: (path: string) => Promise<string | null>;
   readStatus?: string;
+  negoOffer?: NegoOffer | null;
+  negoRespondingId?: string | null;
+  onAcceptNego?: (offerId: string) => void;
+  onRejectNego?: (offerId: string) => void;
+  onCancelNego?: (offerId: string) => void;
 }) {
   const [showActions, setShowActions] = useState(false);
   const isEditing = editingId === message.id;
@@ -801,6 +962,61 @@ function MessageBubble({
     return (
       <div className="flex justify-center py-1.5">
         <span className="text-[11px] text-ink/45 bg-line/50 px-3 py-1.5 rounded-pill text-center max-w-[85%]">{message.content}</span>
+      </div>
+    );
+  }
+
+  if (message.message_type === "nego_offer") {
+    const offer = negoOffer;
+    const isResponding = !!offer && negoRespondingId === offer.id;
+    return (
+      <div className={clsx("flex", isMine ? "justify-end" : "justify-start")}>
+        <div className={clsx("rounded-2xl px-4 py-3 text-sm max-w-[85%] border", isMine ? "bg-turquoise-light/40 border-turquoise/40" : "bg-white border-line")}>
+          <p className="text-[11px] font-semibold text-turquoise-dark uppercase tracking-wide">Tawaran Harga</p>
+          <p className="font-display text-xl font-semibold text-ink mt-0.5">
+            Rp{(offer?.amount ?? 0).toLocaleString("id-ID")}
+          </p>
+
+          {offer?.status === "menunggu" && !isMine && canModify && (
+            <div className="flex gap-2 mt-2.5">
+              <button
+                onClick={() => onAcceptNego?.(offer.id)}
+                disabled={isResponding}
+                className="btn-primary !py-1.5 !px-3 text-xs flex-1 disabled:opacity-50"
+              >
+                {isResponding ? <Loader2 size={14} className="animate-spin mx-auto" /> : "Terima"}
+              </button>
+              <button
+                onClick={() => onRejectNego?.(offer.id)}
+                disabled={isResponding}
+                className="py-1.5 px-3 text-xs flex-1 rounded-pill border border-clay/40 text-clay font-semibold disabled:opacity-50"
+              >
+                Tolak
+              </button>
+            </div>
+          )}
+
+          {offer?.status === "menunggu" && isMine && canModify && (
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-xs text-ink/50">Menunggu respons...</span>
+              <button
+                onClick={() => onCancelNego?.(offer.id)}
+                disabled={isResponding}
+                className="text-xs font-semibold text-clay underline disabled:opacity-50"
+              >
+                {isResponding ? "..." : "Batalkan"}
+              </button>
+            </div>
+          )}
+
+          {offer?.status === "diterima" && (
+            <p className="text-xs font-semibold text-turquoise-dark mt-2">✓ Tawaran diterima</p>
+          )}
+          {offer?.status === "ditolak" && <p className="text-xs font-semibold text-clay mt-2">✕ Tawaran ditolak</p>}
+          {offer?.status === "dibatalkan" && <p className="text-xs text-ink/40 mt-2">Tawaran dibatalkan</p>}
+
+          <span className="block text-[10px] text-ink/40 mt-1.5">{formatChatTime(message.created_at)}</span>
+        </div>
       </div>
     );
   }

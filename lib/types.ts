@@ -142,9 +142,24 @@ export const ADMIN_WHATSAPP_NUMBER = "6285178509892";
 // ---------------------------------------------------------
 // CHAT
 // ---------------------------------------------------------
-export type MessageType = "text" | "image" | "document" | "system";
+export type MessageType = "text" | "image" | "document" | "system" | "nego_offer";
 export type ReadStatus = "terkirim" | "diterima" | "dibaca";
 export type DisputeStatus = "menunggu_admin" | "diproses" | "selesai" | "ditolak";
+export type NegoOfferStatus = "menunggu" | "diterima" | "ditolak" | "dibatalkan";
+
+export const NEGO_QUICK_AMOUNTS = [5000, 10000, 15000, 20000, 25000];
+
+export interface NegoOffer {
+  id: string;
+  conversation_id: string;
+  job_id: string;
+  offered_by: string;
+  amount: number;
+  status: NegoOfferStatus;
+  message_id: string | null;
+  created_at: string;
+  responded_at: string | null;
+}
 
 export const DISPUTE_STATUS_LABEL: Record<DisputeStatus, string> = {
   menunggu_admin: "Menunggu Admin",
@@ -177,6 +192,8 @@ export interface ChatMessage {
   deleted_at: string | null;
   created_at: string;
   attachments?: ChatAttachment[];
+  nego_offer_id?: string | null;
+  nego_offers?: NegoOffer | null;
 }
 
 export interface ConversationListItem {

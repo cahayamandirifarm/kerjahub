@@ -30,6 +30,9 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
           {isWorkerListing && (
             <span className="badge-stage bg-gold-light text-gold-dark text-[10px]">Menawarkan Jasa</span>
           )}
+          {job.is_nego && (
+            <span className="badge-stage bg-turquoise-light text-turquoise-dark text-[10px]">Harga Nego</span>
+          )}
         </div>
         <div className="flex items-start justify-between gap-3 mt-1">
           <h1 className="font-display text-2xl md:text-3xl font-semibold text-ink leading-snug">
@@ -57,14 +60,26 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
         </div>
 
         <div className="card p-5 mt-6">
-          <span className="font-display text-3xl font-semibold text-gold-dark">
-            {formatRupiah(job.price)}
-          </span>
-          <p className="text-sm text-ink/50 mt-1">
-            {isWorkerListing
-              ? "Dana sudah aman ditahan platform begitu kerja sama disepakati — cair setelah pekerjaan selesai."
-              : "Dana sudah aman ditahan platform begitu pekerja diterima — cair setelah pekerjaan selesai."}
-          </p>
+          {job.is_nego ? (
+            <>
+              <span className="font-display text-2xl font-semibold text-gold-dark">Harga Nego</span>
+              <p className="text-sm text-ink/50 mt-1">
+                Perkiraan awal {formatRupiah(job.price)}. Harga akhir ditentukan lewat chat — tanyakan & sepakati harga dengan{" "}
+                {isWorkerListing ? "pekerja" : "pemberi kerja"} sebelum membayar.
+              </p>
+            </>
+          ) : (
+            <>
+              <span className="font-display text-3xl font-semibold text-gold-dark">
+                {formatRupiah(job.price)}
+              </span>
+              <p className="text-sm text-ink/50 mt-1">
+                {isWorkerListing
+                  ? "Dana sudah aman ditahan platform begitu kerja sama disepakati — cair setelah pekerjaan selesai."
+                  : "Dana sudah aman ditahan platform begitu pekerja diterima — cair setelah pekerjaan selesai."}
+              </p>
+            </>
+          )}
         </div>
 
         <div className="card p-5 mt-4">
@@ -93,9 +108,27 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
             kind="job"
             refId={job.id}
             ownerId={job.employer_id}
-            label={isWorkerListing ? "Tanya Dulu Sebelum Ajak Kerja Sama" : "Tanya Dulu Sebelum Melamar"}
+            label={
+              job.is_nego
+                ? "Chat & Tanya Harga"
+                : isWorkerListing
+                ? "Tanya Dulu Sebelum Ajak Kerja Sama"
+                : "Tanya Dulu Sebelum Melamar"
+            }
           />
-          <ApplyButton jobId={job.id} jobStage={job.stage} ownerId={job.employer_id} isWorkerListing={isWorkerListing} />
+          {job.is_nego ? (
+            job.stage === "terbuka" ? (
+              <p className="text-xs text-center text-ink/45">
+                Postingan ini memakai harga Nego — ajukan tawaran harga lewat chat di atas, bukan lamaran langsung.
+              </p>
+            ) : (
+              <div className="card p-4 text-center text-sm text-ink/50">
+                {isWorkerListing ? "Tawaran jasa ini sudah tidak menerima nego." : "Pekerjaan ini sudah tidak menerima nego."}
+              </div>
+            )
+          ) : (
+            <ApplyButton jobId={job.id} jobStage={job.stage} ownerId={job.employer_id} isWorkerListing={isWorkerListing} />
+          )}
         </div>
       </div>
     </div>
