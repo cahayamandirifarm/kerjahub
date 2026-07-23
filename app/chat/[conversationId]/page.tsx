@@ -227,12 +227,13 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         setBlockedByOther(!!blocks?.some((b) => b.blocker_id === otherId));
       }
 
-      const { data: msgs } = await supabase
+      const { data: msgs, error: msgsError } = await supabase
         .from("messages")
-        .select("*, attachments(*), nego_offers(*)")
+        .select("*, attachments(*), nego_offers!messages_nego_offer_id_fkey(*)")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
+      if (msgsError) setLoadError(msgsError.message);
 
       const ordered = (msgs || []).slice().reverse() as ChatMessage[];
       setMessages(ordered);
@@ -513,10 +514,24 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
   async function respondNego(offerId: string, accept: boolean) {
     if (negoRespondingId) return;
     setNegoRespondingId(offerId);
-    const { error } = await supabase.rpc("respond_nego_offer", { p_offer_id: offerId, p_accept: accept });
+    const { data, error } = await supabase.rpc("respond_nego_offer", { p_offer_id: offerId, p_accept: accept });
     setNegoRespondingId(null);
     if (error) {
       alert(error.message || "Gagal merespons tawaran. Coba lagi.");
+      return;
+    }
+    if (accept) {
+      // Harga disepakati -> langsung arahkan pihak pembayar ke halaman
+      // pop-up pembayaran escrow (persis alur terima lamaran biasa).
+      const result = Array.isArray(data) ? data[0] : data;
+      if (result?.escrow_id && result?.payer_id && result.payer_id === userId) {
+        router.push(`/dashboard/employer/escrow/${result.escrow_id}`);
+      }
+    } else {
+      // "Nego lagi" -> buka lagi panel pengajuan tawaran supaya bisa
+      // langsung kirim nominal baru.
+      setNegoOpen(true);
+      setTimeout(() => scrollToBottom(), 100);
     }
   }
 
@@ -583,7 +598,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     const prevHeight = el?.scrollHeight ?? 0;
     const { data } = await supabase
       .from("messages")
-      .select("*, attachments(*), nego_offers(*)")
+      .select("*, attachments(*), nego_offers!messages_nego_offer_id_fkey(*)")
       .eq("conversation_id", conversationId)
       .lt("created_at", messages[0].created_at)
       .order("created_at", { ascending: false })
@@ -984,14 +999,14 @@ function MessageBubble({
                 disabled={isResponding}
                 className="btn-primary !py-1.5 !px-3 text-xs flex-1 disabled:opacity-50"
               >
-                {isResponding ? <Loader2 size={14} className="animate-spin mx-auto" /> : "Terima"}
+                {isResponding ? <Loader2 size={14} className="animate-spin mx-auto" /> : "Setujui Harga"}
               </button>
               <button
                 onClick={() => onRejectNego?.(offer.id)}
                 disabled={isResponding}
-                className="py-1.5 px-3 text-xs flex-1 rounded-pill border border-clay/40 text-clay font-semibold disabled:opacity-50"
+                className="py-1.5 px-3 text-xs flex-1 rounded-pill border border-turquoise/40 text-turquoise-dark font-semibold disabled:opacity-50"
               >
-                Tolak
+                Nego Lagi
               </button>
             </div>
           )}
