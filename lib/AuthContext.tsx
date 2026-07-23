@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 interface Profile {
@@ -26,6 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const pathname = usePathname();
+  const router = useRouter();
 
   async function loadProfile(uid: string) {
     const { data } = await supabase
@@ -33,6 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("id, username, full_name, avatar_url, role, notif_sound_enabled")
       .eq("id", uid)
       .single();
+
+    // Akun dengan role admin hanya boleh dipakai di panel admin (/admin, /admin-login).
+    // Kalau sesi admin kepakai di aplikasi pengguna biasa, langsung sign out.
+    if (data?.role === "admin" && !pathname?.startsWith("/admin")) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      router.push("/login");
+      return;
+    }
+
     setProfile(data as Profile | null);
   }
 

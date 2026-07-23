@@ -20,15 +20,23 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: usernameToEmail(username),
       password
     });
-    setLoading(false);
-    if (authError) {
+    if (authError || !data.user) {
+      setLoading(false);
       setError("Username atau kata sandi salah.");
       return;
     }
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
+    if (profile?.role === "admin") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError("Akun ini khusus untuk Admin Panel dan tidak bisa digunakan untuk masuk ke aplikasi pengguna.");
+      return;
+    }
+    setLoading(false);
     router.push(next);
     router.refresh();
   }
