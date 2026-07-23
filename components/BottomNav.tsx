@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Home, LayoutDashboard, ShoppingBag, MessageCircle, Bell, User } from "lucide-react";
 import clsx from "clsx";
 import { useChatUnread } from "@/lib/ChatUnreadContext";
+import { useNotifications } from "@/lib/NotificationContext";
 import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 
 const ITEMS = [
@@ -18,6 +19,7 @@ const ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname();
   const { unreadChatCount } = useChatUnread();
+  const { unreadCount } = useNotifications();
   const { activeJob } = useActiveJobLock();
 
   return (
@@ -55,6 +57,11 @@ export default function BottomNav() {
                 {href === "/chat" && unreadChatCount > 0 && (
                   <span className="absolute -top-1.5 -right-2 bg-clay text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center">
                     {unreadChatCount > 9 ? "9+" : unreadChatCount}
+                  </span>
+                )}
+                {href === "/notifications" && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-clay text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </span>
