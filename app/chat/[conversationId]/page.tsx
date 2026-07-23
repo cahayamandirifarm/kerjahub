@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 import { notifyActiveConversation } from "@/lib/push";
 import Navbar from "@/components/Navbar";
 import type { ChatMessage, ChatAttachment, NegoOffer } from "@/lib/types";
@@ -38,7 +39,8 @@ import {
   ExternalLink,
   Briefcase,
   ShoppingBag,
-  Tags
+  Tags,
+  Wallet
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -60,6 +62,7 @@ interface ConversationInfo {
   jobId: string | null;
   jobIsNego: boolean;
   jobStage: string | null;
+  jobClientId: string | null;
 }
 
 const PAGE_SIZE = 30;
@@ -68,6 +71,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
   const conversationId = params.conversationId;
   const router = useRouter();
   const supabase = createClient();
+  const { activeJob } = useActiveJobLock();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [conv, setConv] = useState<ConversationInfo | null>(null);
@@ -156,13 +160,15 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       let contextUrl: string | null = null;
       let jobIsNego = false;
       let jobStage: string | null = null;
+      let jobClientId: string | null = null;
       try {
         if (convRow.source_type === "job" && convRow.job_id) {
-          const { data } = await supabase.from("jobs").select("title, is_nego, stage").eq("id", convRow.job_id).single();
+          const { data } = await supabase.from("jobs").select("title, is_nego, stage, client_id").eq("id", convRow.job_id).single();
           if (data?.title) title = data.title;
           if (data) {
             jobIsNego = !!data.is_nego;
             jobStage = data.stage;
+            jobClientId = data.client_id;
           }
           contextUrl = `/jobs/${convRow.job_id}`;
         } else if (convRow.source_type === "marketplace" && convRow.order_id) {
@@ -203,7 +209,8 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         contextLabel: convRow.source_type === "job" ? "Lihat lowongan" : "Lihat produk",
         jobId: convRow.job_id || null,
         jobIsNego,
-        jobStage
+        jobStage,
+        jobClientId
       });
 
       const { data: members } = await supabase
@@ -338,7 +345,11 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
         { event: "UPDATE", schema: "public", table: "jobs" },
         (payload) => {
           const row = payload.new as any;
-          setConv((prev) => (prev && prev.jobId === row.id ? { ...prev, jobIsNego: !!row.is_nego, jobStage: row.stage } : prev));
+          setConv((prev) =>
+            prev && prev.jobId === row.id
+              ? { ...prev, jobIsNego: !!row.is_nego, jobStage: row.stage, jobClientId: row.client_id ?? prev.jobClientId }
+              : prev
+          );
         }
       )
       .subscribe();
@@ -399,6 +410,20 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, userId]);
+
+  // Kalau job dari percakapan ini berubah jadi 'menunggu_pembayaran' dan
+  // akun yang sedang login adalah pembayarnya (mis. tawaran nego baru saja
+  // disetujui pihak lain), arahkan otomatis ke halaman pop-up pembayaran --
+  // tanpa perlu pembayar menekan tombol apa pun.
+  useEffect(() => {
+    if (!conv?.jobId || !activeJob) return;
+    if (activeJob.job_id !== conv.jobId) return;
+    if (activeJob.stage !== "menunggu_pembayaran") return;
+    if (activeJob.my_role !== "employer") return; // 'employer' = pembayar
+    if (!activeJob.escrow_id) return;
+    router.push(`/dashboard/employer/escrow/${activeJob.escrow_id}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeJob, conv?.jobId]);
 
   // live is_online untuk lawan bicara
   useEffect(() => {
@@ -497,7 +522,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     if (!amount || amount <= 0 || negoSending) return;
     setNegoSending(true);
     setNegoError(null);
-    const { error } = await supabase.rpc("send_nego_offer", {
+    const { data, error } = await supabase.rpc("send_nego_offer", {
       p_conversation_id: conversationId,
       p_amount: amount
     });
@@ -505,6 +530,14 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     if (error) {
       setNegoError(error.message || "Gagal mengirim tawaran harga. Coba lagi.");
       return;
+    }
+    // Jangan cuma andalkan realtime buat nampilin bubble nominal tawaran --
+    // di koneksi yang kurang stabil realtime bisa telat/gagal sehingga
+    // nominal sempat/permanen tampil Rp0. Ambil langsung datanya di sini.
+    const result = Array.isArray(data) ? data[0] : data;
+    if (result?.offer_id) {
+      const { data: offerRow } = await supabase.from("nego_offers").select("*").eq("id", result.offer_id).single();
+      if (offerRow) setNegoOffersMap((prev) => ({ ...prev, [offerRow.id]: offerRow as NegoOffer }));
     }
     setNegoOpen(false);
     setNegoCustomAmount("");
@@ -520,6 +553,11 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       alert(error.message || "Gagal merespons tawaran. Coba lagi.");
       return;
     }
+    // Update status tawaran secara lokal juga (jangan tunggu realtime),
+    // supaya "✓ Tawaran diterima" langsung tampil di sisi yang menekan tombol.
+    setNegoOffersMap((prev) =>
+      prev[offerId] ? { ...prev, [offerId]: { ...prev[offerId], status: accept ? "diterima" : "ditolak" } } : prev
+    );
     if (accept) {
       // Harga disepakati -> langsung arahkan pihak pembayar ke halaman
       // pop-up pembayaran escrow (persis alur terima lamaran biasa).
@@ -535,6 +573,29 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     }
   }
 
+  // Dipakai tombol "Bayar Sekarang" di bubble tawaran yang sudah disepakati
+  // -- untuk pihak pembayar yang tidak menekan tombol Setujui sendiri (mis.
+  // baru buka/refresh chat setelah pihak lain menyetujui dari HP lain).
+  async function openPaymentForJob() {
+    if (!conv?.jobId) return;
+    if (activeJob && activeJob.job_id === conv.jobId && activeJob.escrow_id) {
+      router.push(`/dashboard/employer/escrow/${activeJob.escrow_id}`);
+      return;
+    }
+    const { data } = await supabase
+      .from("escrow_payments")
+      .select("id")
+      .eq("job_id", conv.jobId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) {
+      router.push(`/dashboard/employer/escrow/${data.id}`);
+    } else {
+      alert("Data pembayaran belum ditemukan, coba refresh halaman ini.");
+    }
+  }
+
   async function cancelNego(offerId: string) {
     if (negoRespondingId) return;
     setNegoRespondingId(offerId);
@@ -542,7 +603,9 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     setNegoRespondingId(null);
     if (error) {
       alert(error.message || "Gagal membatalkan tawaran. Coba lagi.");
+      return;
     }
+    setNegoOffersMap((prev) => (prev[offerId] ? { ...prev, [offerId]: { ...prev[offerId], status: "dibatalkan" } } : prev));
   }
 
   // -------------------- attachments --------------------
@@ -819,6 +882,9 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
             onAcceptNego={(offerId) => respondNego(offerId, true)}
             onRejectNego={(offerId) => respondNego(offerId, false)}
             onCancelNego={(offerId) => cancelNego(offerId)}
+            isPayerViewer={!!conv.jobClientId && conv.jobClientId === userId}
+            jobStage={conv.jobStage}
+            onOpenPayment={openPaymentForJob}
           />
         ))}
         <div ref={bottomRef} />
@@ -947,7 +1013,10 @@ function MessageBubble({
   negoRespondingId,
   onAcceptNego,
   onRejectNego,
-  onCancelNego
+  onCancelNego,
+  isPayerViewer,
+  jobStage,
+  onOpenPayment
 }: {
   message: ChatMessage;
   isMine: boolean;
@@ -968,15 +1037,28 @@ function MessageBubble({
   onAcceptNego?: (offerId: string) => void;
   onRejectNego?: (offerId: string) => void;
   onCancelNego?: (offerId: string) => void;
+  isPayerViewer?: boolean;
+  jobStage?: string | null;
+  onOpenPayment?: () => void;
 }) {
   const [showActions, setShowActions] = useState(false);
   const isEditing = editingId === message.id;
   const repliedTo = message.reply_to_id ? allMessages.find((m) => m.id === message.reply_to_id) : null;
 
   if (message.is_system) {
+    const isDealMessage = !!message.nego_offer_id && message.content.startsWith("Harga disepakati");
     return (
-      <div className="flex justify-center py-1.5">
+      <div className="flex flex-col items-center py-1.5 gap-1.5">
         <span className="text-[11px] text-ink/45 bg-line/50 px-3 py-1.5 rounded-pill text-center max-w-[85%]">{message.content}</span>
+        {isDealMessage && isPayerViewer && jobStage === "menunggu_pembayaran" && (
+          <button
+            onClick={() => onOpenPayment?.()}
+            className="btn-primary !py-1.5 !px-4 text-xs flex items-center gap-1.5"
+          >
+            <Wallet size={13} />
+            Bayar Sekarang
+          </button>
+        )}
       </div>
     );
   }
@@ -1025,7 +1107,18 @@ function MessageBubble({
           )}
 
           {offer?.status === "diterima" && (
-            <p className="text-xs font-semibold text-turquoise-dark mt-2">✓ Tawaran diterima</p>
+            <div className="mt-2">
+              <p className="text-xs font-semibold text-turquoise-dark">✓ Tawaran diterima</p>
+              {isPayerViewer && jobStage === "menunggu_pembayaran" && (
+                <button
+                  onClick={() => onOpenPayment?.()}
+                  className="btn-primary w-full !py-2 text-xs mt-2 flex items-center justify-center gap-1.5"
+                >
+                  <Wallet size={14} />
+                  Bayar Sekarang
+                </button>
+              )}
+            </div>
           )}
           {offer?.status === "ditolak" && <p className="text-xs font-semibold text-clay mt-2">✕ Tawaran ditolak</p>}
           {offer?.status === "dibatalkan" && <p className="text-xs text-ink/40 mt-2">Tawaran dibatalkan</p>}
