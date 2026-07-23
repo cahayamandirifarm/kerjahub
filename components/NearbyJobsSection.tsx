@@ -12,6 +12,7 @@ interface NearbyJob {
   title: string;
   category: string;
   price: number;
+  is_nego: boolean;
   estimated_duration: string;
   district: string | null;
   city: string | null;
@@ -34,6 +35,7 @@ interface NearbyWorker {
   job_title: string;
   job_category: string;
   job_price: number;
+  job_is_nego: boolean;
   job_estimated_duration: string;
 }
 
@@ -141,7 +143,7 @@ export default function NearbyJobsSection() {
                 {item.district && <span>{item.district}</span>}
               </div>
               <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                {formatRupiah(item.price)}
+                {item.is_nego ? "Nego" : formatRupiah(item.price)}
               </p>
             </Link>
           ) : (
@@ -172,7 +174,7 @@ export default function NearbyJobsSection() {
                 {item.district && <span>{item.district}</span>}
               </div>
               <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                {formatRupiah(item.job_price)}
+                {item.job_is_nego ? "Nego" : formatRupiah(item.job_price)}
               </p>
               {item.skills && item.skills.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">

@@ -14,6 +14,7 @@ interface NearbyJobRow {
   title: string;
   category: string;
   price: number;
+  is_nego: boolean;
   estimated_duration: string;
   district: string | null;
   city: string | null;
@@ -35,6 +36,7 @@ interface NearbyWorkerRow {
   job_title: string;
   job_category: string;
   job_price: number;
+  job_is_nego: boolean;
   job_estimated_duration: string;
 }
 
@@ -155,7 +157,7 @@ function KategoriContent() {
                   {job.district && <span>{job.district}</span>}
                 </div>
                 <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                  {formatRupiah(job.price)}
+                  {job.is_nego ? "Nego" : formatRupiah(job.price)}
                 </p>
               </Link>
             ))}
@@ -183,7 +185,7 @@ function KategoriContent() {
                   {w.district && <span>{w.district}</span>}
                 </div>
                 <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                  {formatRupiah(w.job_price)}
+                  {w.job_is_nego ? "Nego" : formatRupiah(w.job_price)}
                 </p>
                 <div className="flex items-center gap-4 mt-3 text-xs text-ink/50">
                   <span className="inline-flex items-center gap-1">

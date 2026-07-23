@@ -55,7 +55,14 @@ export default function ActiveJobOverlay() {
     setCancelError(null);
     if (!confirm(`Batalkan pembayaran untuk "${activeJob!.title}"? Kerja sama ini akan dibatalkan.`)) return;
     const res = await cancelPendingPayment();
-    if (res.error) setCancelError(res.error);
+    if (res.error) {
+      setCancelError(res.error);
+      return;
+    }
+    // Setelah dibatalkan, langsung kembali ke dasbor awal alih-alih
+    // membiarkan overlay hilang begitu saja dan menampilkan halaman apa
+    // pun yang sedang dibuka di baliknya.
+    router.push("/dashboard/employer");
   }
 
   if (isPayer && !allowed) {
