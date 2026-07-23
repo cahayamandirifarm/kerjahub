@@ -22,14 +22,25 @@ export default async function AdminKycPage() {
               {p.kyc_selfie_url && (
                 <img src={p.kyc_selfie_url} alt="" className="w-14 h-14 rounded-full object-cover border border-line" />
               )}
+              {p.kyc_ktp_url && (
+                <img src={p.kyc_ktp_url} alt="" className="w-20 h-14 rounded-lg object-cover border border-line" />
+              )}
               <div>
                 <p className="font-semibold">{p.full_name}</p>
                 <p className="text-sm text-ink/50">{p.phone}</p>
-                {p.kyc_selfie_url && (
-                  <a href={p.kyc_selfie_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
-                    Lihat selfie ukuran penuh
-                  </a>
-                )}
+                <p className="text-[11px] text-ink/40 mb-0.5">Pastikan nama di atas sama dengan nama pada KTP/SIM sebelum menyetujui.</p>
+                <div className="flex gap-3">
+                  {p.kyc_selfie_url && (
+                    <a href={p.kyc_selfie_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
+                      Lihat selfie
+                    </a>
+                  )}
+                  {p.kyc_ktp_url && (
+                    <a href={p.kyc_ktp_url} target="_blank" className="text-xs font-semibold text-turquoise underline">
+                      Lihat KTP/SIM
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             <AdminKycReviewButtons profileId={p.id} />
