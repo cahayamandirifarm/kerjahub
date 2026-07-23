@@ -83,8 +83,21 @@ export function ActiveJobLockProvider({ children }: { children: React.ReactNode 
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "jobs" }, () => refresh())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "escrow_payments" }, () => refresh())
       .subscribe();
+
+    // Fallback polling -- jaring pengaman kalau koneksi realtime putus ATAU
+    // kalau baris job ini baru pertama kali "kelihatan" oleh pengguna ini
+    // (mis. baru ditetapkan jadi client_id/assigned_worker_id lewat nego
+    // harga di chat) -- pada kasus begitu, event postgres_changes kadang
+    // tidak terkirim karena baris lama belum lolos RLS untuk pengguna ini
+    // sebelum update terjadi. Pola sama seperti NegoOfferPopupContext.
+    const pollInterval = setInterval(() => {
+      if (document.hidden) return;
+      refresh();
+    }, 8000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
