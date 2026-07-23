@@ -358,8 +358,7 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
     // putus/gagal reconnect (umum di jaringan seluler yang tidak stabil).
     // Ambil pesan yang lebih baru dari pesan terakhir yang sudah ada di
     // layar; kalau realtime bekerja normal ini hampir selalu kosong.
-    const pollInterval = setInterval(async () => {
-      if (document.hidden) return;
+    function pollNewMessages() {
       setMessages((prev) => {
         const lastCreatedAt = prev.length ? prev[prev.length - 1].created_at : null;
         if (!lastCreatedAt) return prev;
@@ -381,11 +380,29 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
           });
         return prev;
       });
-    }, 4000);
+    }
+
+    const pollInterval = setInterval(() => {
+      if (document.hidden) return;
+      pollNewMessages();
+    }, 2500);
+
+    // Begitu tab/app dibuka lagi setelah di-background (kasus umum di HP:
+    // pindah ke WhatsApp/notifikasi sebentar lalu balik lagi), langsung
+    // ambil pesan terbaru saat itu juga -- jangan tunggu tick poll
+    // berikutnya, karena setInterval di tab background sering ditunda
+    // browser jauh lebih lama dari 2.5 detik.
+    function handleVisibility() {
+      if (!document.hidden) pollNewMessages();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, userId]);
