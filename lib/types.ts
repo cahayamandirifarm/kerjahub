@@ -56,6 +56,7 @@ export interface Job {
   location: string;
   is_remote: boolean;
   price: number;
+  is_nego?: boolean;
   estimated_duration: string;
   stage: JobStage;
   assigned_worker_id: string | null;

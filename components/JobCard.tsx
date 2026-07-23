@@ -5,6 +5,9 @@ import { MapPin, Clock, ArrowUpRight } from "lucide-react";
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
+function formatJobPrice(job: Job) {
+  return job.is_nego ? "NEGO" : formatRupiah(job.price);
+}
 export default function JobCard({ job }: { job: Job }) {
   return (
     <Link
@@ -37,7 +40,7 @@ export default function JobCard({ job }: { job: Job }) {
       </div>
       <div className="mt-3 pt-3 border-t border-line/70 flex items-center justify-between">
         <span className="font-display text-xl font-bold text-ink">
-          {formatRupiah(job.price)}
+          {formatJobPrice(job)}
         </span>
         <span className="inline-flex items-center gap-1 text-sm font-semibold text-turquoise-dark group-hover:gap-1.5 transition-all">
           Detail <ArrowUpRight size={15} />

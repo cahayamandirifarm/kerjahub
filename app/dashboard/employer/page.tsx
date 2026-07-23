@@ -12,6 +12,13 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// Postingan job dengan is_nego = true belum punya harga final -- price
+// yang tersimpan cuma perkiraan awal, jadi jangan ditampilkan sebagai
+// harga di dasbor supaya tidak dikira harga pasti. Cukup tampilkan "NEGO".
+function formatJobPrice(job: { price: number; is_nego?: boolean }) {
+  return job.is_nego ? "NEGO" : formatRupiah(job.price);
+}
+
 const LISTING_STATUS_LABEL: Record<string, string> = {
   aktif: "Aktif",
   nonaktif: "Nonaktif",
@@ -136,7 +143,7 @@ export default async function EmployerDashboard() {
               <div className="min-w-0">
                 <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                 <h3 className="font-semibold text-ink truncate">{job.title}</h3>
-                <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(job.price)}</p>
+                <p className="text-sm text-ink/50 mt-0.5">{formatJobPrice(job)}</p>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <StatusBadge stage={job.stage} />
@@ -187,7 +194,7 @@ export default async function EmployerDashboard() {
               <div className="min-w-0">
                 <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                 <h3 className="font-semibold text-ink truncate">{job.title}</h3>
-                <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(job.price)}</p>
+                <p className="text-sm text-ink/50 mt-0.5">{formatJobPrice(job)}</p>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <StatusBadge stage={job.stage} />

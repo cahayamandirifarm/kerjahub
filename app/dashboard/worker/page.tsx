@@ -9,6 +9,13 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// Sama seperti di dasbor pemberi kerja -- job/lamaran dengan is_nego = true
+// belum punya harga final, jadi tampilkan "NEGO" saja, bukan angka perkiraan.
+function formatJobPrice(job: { price: number; is_nego?: boolean } | null | undefined) {
+  if (!job) return formatRupiah(0);
+  return job.is_nego ? "NEGO" : formatRupiah(job.price);
+}
+
 export default async function WorkerDashboard() {
   const supabase = createClient();
   const {
@@ -116,7 +123,7 @@ export default async function WorkerDashboard() {
                   <div className="min-w-0">
                     <span className="text-xs font-semibold text-turquoise uppercase">{job.category}</span>
                     <h3 className="font-semibold text-ink truncate">{job.title}</h3>
-                    <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(job.price)}</p>
+                    <p className="text-sm text-ink/50 mt-0.5">{formatJobPrice(job)}</p>
                   </div>
                   <StatusBadge stage={job.stage} />
                 </div>
@@ -154,7 +161,7 @@ export default async function WorkerDashboard() {
               <div className="min-w-0">
                 <span className="text-xs font-semibold text-turquoise uppercase">{app.jobs?.category}</span>
                 <h3 className="font-semibold text-ink truncate">{app.jobs?.title}</h3>
-                <p className="text-sm text-ink/50 mt-0.5">{formatRupiah(app.jobs?.price)}</p>
+                <p className="text-sm text-ink/50 mt-0.5">{formatJobPrice(app.jobs)}</p>
               </div>
               <StatusBadge stage={app.jobs?.stage} />
             </div>

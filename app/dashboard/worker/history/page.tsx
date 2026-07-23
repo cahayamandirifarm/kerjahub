@@ -7,6 +7,11 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+function formatJobPrice(job: { price: number; is_nego?: boolean } | null | undefined) {
+  if (!job) return formatRupiah(0);
+  return job.is_nego ? "NEGO" : formatRupiah(job.price);
+}
+
 export default async function WorkerHistoryPage() {
   const supabase = createClient();
   const {
@@ -52,7 +57,7 @@ export default async function WorkerHistoryPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="font-semibold text-ink truncate">{app.jobs?.title}</h3>
-                <p className="text-sm text-ink/50">{formatRupiah(app.jobs?.price)}</p>
+                <p className="text-sm text-ink/50">{formatJobPrice(app.jobs)}</p>
               </div>
               <StatusBadge stage={app.jobs?.stage} />
             </div>
