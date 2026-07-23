@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +21,22 @@ export default function ChatListPage() {
   const [pendingDelete, setPendingDelete] = useState<ConversationListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Simpan tab & query terbaru di ref supaya handler realtime/polling di
+  // bawah selalu baca nilai TERKINI -- sebelumnya effect channel realtime
+  // cuma punya dependency [userId, tab] (tanpa query), jadi closure-nya
+  // "membeku" pakai nilai query saat channel dibuat pertama kali. Efeknya:
+  // begitu pengguna pernah mengetik di kolom pencarian, pesan baru yang
+  // masuk lewat realtime dipakai buat reload dengan query LAMA/basi ->
+  // daftar chat kelihatan tidak update sampai halaman dibuka ulang.
+  const tabRef = useRef(tab);
+  const queryRef = useRef(query);
+  useEffect(() => {
+    tabRef.current = tab;
+  }, [tab]);
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
+
   const load = useCallback(
     async (archived: boolean, search: string) => {
       const { data, error } = await supabase.rpc("list_my_conversations", {
@@ -33,6 +49,11 @@ export default function ChatListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  const reloadCurrent = useCallback(() => {
+    load(tabRef.current === "arsip", queryRef.current.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load]);
 
   useEffect(() => {
     (async () => {
@@ -59,18 +80,27 @@ export default function ChatListPage() {
     if (!userId) return;
     const channel = supabase
       .channel(`chat-list-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () =>
-        load(tab === "arsip", query.trim())
-      )
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_members" }, () =>
-        load(tab === "arsip", query.trim())
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, reloadCurrent)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_members" }, reloadCurrent)
       .subscribe();
+
+    // Fallback polling -- jaring pengaman kalau koneksi realtime (WebSocket)
+    // putus/gagal reconnect (sama seperti di halaman detail percakapan).
+    // Tanpa ini, begitu event realtime terlewat/gagal terkirim, daftar chat
+    // baru ke-update kalau halaman dibuka ulang. Kalau realtime bekerja
+    // normal, reload dari sini praktis tidak kelihatan bedanya karena data
+    // sudah sama.
+    const pollInterval = setInterval(() => {
+      if (document.hidden) return;
+      reloadCurrent();
+    }, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, tab]);
+  }, [userId]);
 
   async function confirmDelete() {
     if (!pendingDelete) return;
