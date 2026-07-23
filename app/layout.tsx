@@ -16,6 +16,7 @@ import CompletionPopupOverlay from "@/components/CompletionPopupOverlay";
 import FinishPopupOverlay from "@/components/FinishPopupOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
+import EnableNotificationsPrompt from "@/components/EnableNotificationsPrompt";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <FinishPopupProvider>
                       <OnlineStatus />
                       <PWAInstall />
+                      <EnableNotificationsPrompt />
                       <ActiveJobOverlay />
                       <ApplicantPopupOverlay />
                       <NegoOfferPopupOverlay />
