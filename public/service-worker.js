@@ -91,13 +91,34 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
-      // kalau ada tab yang fokus & sedang melihat percakapan yang sama, skip —
-      // biar tidak dobel dengan toast in-app.
+      // Angka merah di ikon app (seperti WhatsApp) — server sudah menghitung
+      // total notifikasi belum dibaca milik penerima ini dan mengirimkannya
+      // lewat payload.badgeCount, supaya angkanya selalu akurat walau ada
+      // beberapa notifikasi menumpuk sebelum app dibuka lagi.
+      //
+      // PENTING: badge ini WAJIB selalu disinkronkan di sini, TIDAK BOLEH
+      // ikut di-skip oleh pengecekan "isViewingThisChat" di bawah. Badge
+      // mewakili total notifikasi belum dibaca di SELURUH app (termasuk
+      // hasil nego harga, pembayaran, lamaran, dll), bukan cuma percakapan
+      // yang sedang dibuka — sebelumnya badge ini ikut ter-skip kalau
+      // activeConversationId di service worker masih "nyangkut" menunjuk ke
+      // percakapan tempat nego harga terakhir terjadi (mis. tab/app ditutup
+      // paksa sebelum sempat memberi tahu SW bahwa percakapan sudah
+      // ditinggalkan), sehingga badge notifikasi PWA berhenti muncul untuk
+      // percakapan itu seterusnya walau ada notifikasi baru.
+      if ("setAppBadge" in self.navigator && typeof payload.badgeCount === "number") {
+        if (payload.badgeCount > 0) {
+          self.navigator.setAppBadge(payload.badgeCount).catch(() => {});
+        } else {
+          self.navigator.clearAppBadge().catch(() => {});
+        }
+      }
+
       // kalau ada tab yang BENAR-BENAR TERLIHAT (bukan sekadar "focused" —
       // di Android, status focused tab kadang belum langsung berubah saat
       // app dipindah ke background tapi layar masih menyala) & sedang
-      // melihat percakapan yang sama, skip — biar tidak dobel dengan toast
-      // in-app.
+      // melihat percakapan yang sama, skip TOAST/notifikasi visualnya saja —
+      // biar tidak dobel dengan toast in-app. Badge di atas tetap jalan.
       const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       const isViewingThisChat = clientsList.some(
         (c) =>
@@ -120,18 +141,6 @@ self.addEventListener("push", (event) => {
         requireInteraction: payload.urgent !== false,
         vibrate: payload.urgent === false ? [120, 60, 120] : [200, 100, 200, 100, 200]
       });
-
-      // Angka merah di ikon app (seperti WhatsApp) — server sudah menghitung
-      // total notifikasi belum dibaca milik penerima ini dan mengirimkannya
-      // lewat payload.badgeCount, supaya angkanya selalu akurat walau ada
-      // beberapa notifikasi menumpuk sebelum app dibuka lagi.
-      if ("setAppBadge" in self.navigator && typeof payload.badgeCount === "number") {
-        if (payload.badgeCount > 0) {
-          self.navigator.setAppBadge(payload.badgeCount).catch(() => {});
-        } else {
-          self.navigator.clearAppBadge().catch(() => {});
-        }
-      }
     })()
   );
 });

@@ -475,9 +475,24 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
 
   // beri tahu service worker percakapan ini sedang dibuka, supaya push
   // notification untuk chat ini tidak dobel dengan toast in-app.
+  // Selain lewat cleanup unmount (yang tidak selalu sempat jalan kalau
+  // tab/app ditutup paksa), juga dengar visibilitychange & pagehide supaya
+  // status "sedang dibuka" ini tidak nyangkut/stuck di service worker.
   useEffect(() => {
     notifyActiveConversation(conversationId);
-    return () => notifyActiveConversation(null);
+
+    function handleVisibilityOrHide() {
+      if (document.hidden) notifyActiveConversation(null);
+      else notifyActiveConversation(conversationId);
+    }
+    document.addEventListener("visibilitychange", handleVisibilityOrHide);
+    window.addEventListener("pagehide", handleVisibilityOrHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityOrHide);
+      window.removeEventListener("pagehide", handleVisibilityOrHide);
+      notifyActiveConversation(null);
+    };
   }, [conversationId]);
 
   const isBlocked = blockedByMe || blockedByOther;
