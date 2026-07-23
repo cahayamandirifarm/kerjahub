@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import JobCard from "@/components/JobCard";
@@ -72,22 +73,24 @@ export default async function HomePage({
       <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>
         <div className="flex items-center gap-2 mb-3">
-          <a
+          <Link
             href={`/?tipe=kerja${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
+            scroll={false}
             className={`rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
               tipe === "employer" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
             Saya Butuh Pekerja
-          </a>
-          <a
+          </Link>
+          <Link
             href={`/?tipe=jasa${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
+            scroll={false}
             className={`rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
               tipe === "worker" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
             Saya Butuh Pekerjaan
-          </a>
+          </Link>
         </div>
 
         <h3 className="font-display text-sm font-semibold text-ink/70 mb-3">Semua Kategori</h3>
@@ -95,7 +98,7 @@ export default async function HomePage({
           {JOB_CATEGORIES.map((c) => {
             const copy = categoryPostCopy(c, tipe === "worker" ? "jasa" : "kerja");
             return (
-              <a
+              <Link
                 key={c}
                 href={`/kategori?tipe=${tipe === "worker" ? "jasa" : "kerja"}&kategori=${encodeURIComponent(c)}`}
                 className="card p-4 hover:-translate-y-0.5 hover:shadow-soft transition-all duration-200"
@@ -104,7 +107,7 @@ export default async function HomePage({
                   {copy.title}
                 </span>
                 <p className="text-sm text-ink/60 mt-1 leading-snug line-clamp-2">{copy.subtitle}</p>
-              </a>
+              </Link>
             );
           })}
         </div>
