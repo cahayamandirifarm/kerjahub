@@ -80,7 +80,7 @@ export default async function HomePage({
               tipe === "employer" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
-            Saya Butuh Pekerja
+            Saya Butuh Pekerja (Pemberi Upah)
           </Link>
           <Link
             href={`/?tipe=jasa${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
@@ -89,7 +89,7 @@ export default async function HomePage({
               tipe === "worker" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
             }`}
           >
-            Saya Butuh Pekerjaan
+            Saya Butuh Pekerjaan (Penerima Upah)
           </Link>
         </div>
 
