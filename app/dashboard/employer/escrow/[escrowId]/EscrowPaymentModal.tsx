@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { X, Copy, Check, QrCode, Upload, MessageCircle, Wallet } from "lucide-react";
 import { ADMIN_WHATSAPP_NUMBER } from "@/lib/types";
+import { useActiveJobLock } from "@/lib/ActiveJobLockContext";
 
 interface Escrow {
   id: string;
@@ -46,13 +47,26 @@ export default function EscrowPaymentModal({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const { cancelling, cancelPendingPayment } = useActiveJobLock();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [copied, setCopied] = useState<"amount" | "account" | null>(null);
 
   function close() {
     router.back();
+  }
+
+  async function handleCancel() {
+    setCancelError(null);
+    if (!confirm(`Batalkan pembayaran untuk "${jobTitle}"? Kerja sama ini akan dibatalkan.`)) return;
+    const res = await cancelPendingPayment();
+    if (res.error) {
+      setCancelError(res.error);
+      return;
+    }
+    router.push("/dashboard/employer");
   }
 
   function copyText(text: string, key: "amount" | "account") {
@@ -229,6 +243,15 @@ export default function EscrowPaymentModal({
                       {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
                     </button>
                   </form>
+
+                  {cancelError && <p className="text-sm text-clay text-center">{cancelError}</p>}
+                  <button
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors disabled:opacity-60"
+                  >
+                    {cancelling ? "Membatalkan..." : "Batalkan"}
+                  </button>
                 </>
               ) : (
                 <div className="text-center py-4">

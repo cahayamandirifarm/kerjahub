@@ -1,17 +1,16 @@
 // supabase/functions/send-chat-push/index.ts
 //
-// Dipanggil oleh trigger Postgres `trg_notify_push_for_message` (lewat pg_net)
-// setiap ada pesan baru di tabel `messages`. Fungsi ini:
-//   1. Memverifikasi header rahasia (x-webhook-secret) supaya tidak sembarang
-//      orang bisa memicu push lewat endpoint publik ini.
-//   2. Mengambil detail pesan, pengirim, dan anggota percakapan lain.
-//   3. Mengirim Web Push (avatar, nama, cuplikan pesan) ke setiap subscription
-//      milik anggota lain. Supaya tidak dobel dengan toast in-app saat
-//      percakapan itu sedang aktif dibuka, pengecekan "apakah user sedang
-//      lihat chat ini" dilakukan di SISI CLIENT (service worker), lihat
-//      public/service-worker.js — bukan di sini, karena server tidak tahu
-//      status fokus tab pengguna secara real-time.
-//   4. Membersihkan subscription yang sudah kedaluwarsa (404/410).
+// Dipanggil oleh 2 trigger Postgres (lewat pg_net):
+//   1. `trg_notify_push_for_message` (0009) — setiap pesan chat baru.
+//      body: { message_id, conversation_id, sender_id }
+//   2. `trg_notify_push_for_notification` (0044) — setiap baris baru di
+//      tabel `notifications` SELAIN category='chat' (lamaran kerja,
+//      pembayaran, escrow, dll — semua event yang sudah otomatis
+//      menulis ke tabel `notifications` di seluruh app).
+//      body: { kind: "generic", notification_id, profile_id, title, body, link }
+//
+// Keduanya berujung ke fungsi kirim push yang sama (sendPushToProfile),
+// supaya logika kirim/hapus-subscription-kedaluwarsa tidak dobel ditulis.
 //
 // Deploy: supabase functions deploy send-chat-push
 // Secrets yang WAJIB diset (supabase secrets set ...):
@@ -39,89 +38,109 @@ function snippetFor(messageType: string, content: string) {
   return content?.slice(0, 120) || "Pesan baru";
 }
 
+// Hitung total notifikasi belum dibaca PER penerima, supaya angka badge
+// merah di ikon app (mirip WhatsApp) selalu akurat.
+async function badgeCountByProfile(profileIds: string[]) {
+  const { data } = await supabase.from("notifications").select("profile_id").in("profile_id", profileIds).eq("is_read", false);
+  const map = new Map<string, number>();
+  for (const row of data ?? []) map.set(row.profile_id, (map.get(row.profile_id) ?? 0) + 1);
+  return map;
+}
+
+// Kirim 1 payload push ke semua subscription milik daftar profile_id,
+// lalu bersihkan subscription yang sudah kedaluwarsa (404/410).
+async function sendPushToProfiles(profileIds: string[], buildPayload: (badgeCount: number) => object) {
+  const { data: subs } = await supabase
+    .from("push_subscriptions")
+    .select("id, profile_id, endpoint, p256dh, auth")
+    .in("profile_id", profileIds);
+
+  if (!subs?.length) return "no subscriptions";
+
+  const badgeMap = await badgeCountByProfile(profileIds);
+  const expiredIds: string[] = [];
+
+  await Promise.all(
+    subs.map(async (s) => {
+      const payload = JSON.stringify(buildPayload(badgeMap.get(s.profile_id) ?? 1));
+      try {
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
+        console.log(`push OK -> profile ${s.profile_id}`);
+      } catch (err: any) {
+        console.error(`push GAGAL -> profile ${s.profile_id}:`, err?.statusCode, err?.body || err?.message || err);
+        if (err?.statusCode === 404 || err?.statusCode === 410) expiredIds.push(s.id);
+      }
+    })
+  );
+
+  if (expiredIds.length) await supabase.from("push_subscriptions").delete().in("id", expiredIds);
+  return "ok";
+}
+
+// -------- Jalur 1: pesan chat baru --------
+async function handleChatMessage(body: any) {
+  const { message_id, conversation_id, sender_id } = body;
+  if (!message_id || !conversation_id || !sender_id) return new Response("Bad request", { status: 400 });
+
+  const { data: message } = await supabase
+    .from("messages")
+    .select("content, message_type, is_system")
+    .eq("id", message_id)
+    .single();
+  if (!message || message.is_system) return new Response("skip", { status: 200 });
+
+  const { data: sender } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", sender_id).single();
+
+  const { data: members } = await supabase
+    .from("conversation_members")
+    .select("profile_id")
+    .eq("conversation_id", conversation_id)
+    .neq("profile_id", sender_id);
+  if (!members?.length) return new Response("no recipients", { status: 200 });
+
+  const result = await sendPushToProfiles(
+    members.map((m) => m.profile_id),
+    (badgeCount) => ({
+      title: sender?.full_name || "Pesan baru",
+      body: snippetFor(message.message_type, message.content),
+      icon: sender?.avatar_url || "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      url: `/chat/${conversation_id}`,
+      conversationId: conversation_id,
+      tag: `chat-${conversation_id}`,
+      urgent: false,
+      badgeCount
+    })
+  );
+  return new Response(result, { status: 200 });
+}
+
+// -------- Jalur 2: notifikasi umum (lamaran, pembayaran, escrow, dll) --------
+async function handleGenericNotification(body: any) {
+  const { profile_id, title, body: notifBody, link } = body;
+  if (!profile_id || !title) return new Response("Bad request", { status: 400 });
+
+  const result = await sendPushToProfiles([profile_id], (badgeCount) => ({
+    title,
+    body: notifBody || "",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    url: link || "/notifications",
+    tag: `notif-${profile_id}-${Date.now()}`,
+    badgeCount
+  }));
+  return new Response(result, { status: 200 });
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.headers.get("x-webhook-secret") !== WEBHOOK_SECRET) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const { message_id, conversation_id, sender_id } = await req.json();
-    if (!message_id || !conversation_id || !sender_id) {
-      return new Response("Bad request", { status: 400 });
-    }
-
-    const { data: message } = await supabase
-      .from("messages")
-      .select("content, message_type, is_system")
-      .eq("id", message_id)
-      .single();
-    if (!message || message.is_system) return new Response("skip", { status: 200 });
-
-    const { data: sender } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", sender_id).single();
-
-    const { data: members } = await supabase
-      .from("conversation_members")
-      .select("profile_id")
-      .eq("conversation_id", conversation_id)
-      .neq("profile_id", sender_id);
-
-    if (!members?.length) return new Response("no recipients", { status: 200 });
-
-    const recipientIds = members.map((m) => m.profile_id);
-    const { data: subs } = await supabase
-      .from("push_subscriptions")
-      .select("id, profile_id, endpoint, p256dh, auth")
-      .in("profile_id", recipientIds);
-
-    if (!subs?.length) return new Response("no subscriptions", { status: 200 });
-
-    // Hitung total notifikasi belum dibaca PER penerima, supaya angka badge
-    // merah di ikon app (mirip WhatsApp) selalu akurat — bukan cuma "+1"
-    // per pesan, tapi total sesungguhnya (termasuk lamaran/pembayaran/dll
-    // yang belum dibaca juga, karena semua masuk ke tabel `notifications`).
-    const { data: unreadCounts } = await supabase
-      .from("notifications")
-      .select("profile_id")
-      .in("profile_id", recipientIds)
-      .eq("is_read", false);
-
-    const badgeCountByProfile = new Map<string, number>();
-    for (const row of unreadCounts ?? []) {
-      badgeCountByProfile.set(row.profile_id, (badgeCountByProfile.get(row.profile_id) ?? 0) + 1);
-    }
-
-    const expiredIds: string[] = [];
-
-    await Promise.all(
-      subs.map(async (s) => {
-        const payload = JSON.stringify({
-          title: sender?.full_name || "Pesan baru",
-          body: snippetFor(message.message_type, message.content),
-          icon: sender?.avatar_url || "/icons/icon-192.png",
-          badge: "/icons/icon-192.png",
-          conversationId: conversation_id,
-          tag: `chat-${conversation_id}`,
-          badgeCount: badgeCountByProfile.get(s.profile_id) ?? 1
-        });
-
-        try {
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            payload
-          );
-          console.log(`push OK -> profile ${s.profile_id}`);
-        } catch (err: any) {
-          console.error(`push GAGAL -> profile ${s.profile_id}:`, err?.statusCode, err?.body || err?.message || err);
-          if (err?.statusCode === 404 || err?.statusCode === 410) expiredIds.push(s.id);
-        }
-      })
-    );
-
-    if (expiredIds.length) {
-      await supabase.from("push_subscriptions").delete().in("id", expiredIds);
-    }
-
-    return new Response("ok", { status: 200 });
+    const body = await req.json();
+    if (body.kind === "generic") return await handleGenericNotification(body);
+    return await handleChatMessage(body);
   } catch (err) {
     console.error(err);
     return new Response("error", { status: 500 });
