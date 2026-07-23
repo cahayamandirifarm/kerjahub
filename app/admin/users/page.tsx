@@ -14,18 +14,41 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({ searchParams }: { searchParams: { q?: string } }) {
   const supabase = createClient();
   const {
     data: { user: currentUser }
   } = await supabase.auth.getUser();
   const isSuperadmin = currentUser?.id === SUPERADMIN_ID;
 
-  const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  const q = searchParams?.q?.trim() || "";
+
+  let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  if (q) {
+    query = query.or(`username.ilike.%${q}%,full_name.ilike.%${q}%`);
+  }
+  const { data: users } = await query;
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold mb-6">Pengguna</h1>
+      <h1 className="font-display text-2xl font-semibold mb-4">Pengguna</h1>
+      <form method="GET" className="mb-4 flex gap-2 max-w-sm">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="Cari nama atau username pengguna..."
+          className="input"
+        />
+        <button type="submit" className="btn-primary shrink-0 !px-4">
+          Cari
+        </button>
+        {q && (
+          <a href="/admin/users" className="btn-secondary shrink-0 !px-4 flex items-center">
+            Reset
+          </a>
+        )}
+      </form>
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-paper text-ink/50 text-xs uppercase">
@@ -81,6 +104,11 @@ export default async function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        {users?.length === 0 && (
+          <div className="p-6 text-center text-ink/50 text-sm">
+            {q ? `Tidak ada pengguna dengan nama/username "${q}".` : "Belum ada pengguna."}
+          </div>
+        )}
       </div>
     </div>
   );

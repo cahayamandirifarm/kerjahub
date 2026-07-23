@@ -6,17 +6,51 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminJobsPage() {
+export default async function AdminJobsPage({ searchParams }: { searchParams: { q?: string } }) {
   const supabase = createClient();
-  const { data: jobs } = await supabase
+  const q = searchParams?.q?.trim() || "";
+
+  let employerIds: string[] = [];
+  if (q) {
+    const { data: matchedProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`);
+    employerIds = matchedProfiles?.map((p) => p.id) || [];
+  }
+
+  let query = supabase
     .from("jobs")
     .select("*, profiles!jobs_employer_id_fkey(full_name)")
     .order("created_at", { ascending: false })
     .limit(100);
 
+  if (q) {
+    query = query.in("employer_id", employerIds.length ? employerIds : ["00000000-0000-0000-0000-000000000000"]);
+  }
+
+  const { data: jobs } = await query;
+
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold mb-6">Postingan Kerja</h1>
+      <h1 className="font-display text-2xl font-semibold mb-4">Postingan Kerja</h1>
+      <form method="GET" className="mb-4 flex gap-2 max-w-sm">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="Cari nama atau username pemasang..."
+          className="input"
+        />
+        <button type="submit" className="btn-primary shrink-0 !px-4">
+          Cari
+        </button>
+        {q && (
+          <a href="/admin/jobs" className="btn-secondary shrink-0 !px-4 flex items-center">
+            Reset
+          </a>
+        )}
+      </form>
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-paper text-ink/50 text-xs uppercase">
@@ -66,6 +100,11 @@ export default async function AdminJobsPage() {
             ))}
           </tbody>
         </table>
+        {jobs?.length === 0 && (
+          <div className="p-6 text-center text-ink/50 text-sm">
+            {q ? `Tidak ada postingan dari pengguna "${q}".` : "Belum ada postingan kerja."}
+          </div>
+        )}
       </div>
     </div>
   );
