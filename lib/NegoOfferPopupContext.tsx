@@ -4,11 +4,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 
 export interface PendingNegoOffer {
-  offer_id: string;
+  kind: "offer" | "inquiry";
+  offer_id: string | null;
   conversation_id: string;
   job_id: string;
   job_title: string;
-  amount: number;
+  amount: number | null;
   created_at: string;
   offerer_id: string;
   offerer_name: string;
@@ -66,6 +67,7 @@ export function NegoOfferPopupProvider({ children }: { children: React.ReactNode
       .channel(`nego-offer-popup-${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "nego_offers" }, () => refresh())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nego_offers" }, () => refresh())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversations" }, () => refresh())
       .subscribe();
 
     // Fallback polling -- jaring pengaman kalau koneksi realtime putus,
@@ -85,7 +87,11 @@ export function NegoOfferPopupProvider({ children }: { children: React.ReactNode
   const dismiss = useCallback(async () => {
     if (!popup) return;
     setProcessing(true);
-    await supabase.rpc("dismiss_nego_offer_popup", { p_offer_id: popup.offer_id });
+    if (popup.kind === "offer" && popup.offer_id) {
+      await supabase.rpc("dismiss_nego_offer_popup", { p_offer_id: popup.offer_id });
+    } else {
+      await supabase.rpc("dismiss_nego_inquiry_popup", { p_conversation_id: popup.conversation_id });
+    }
     setProcessing(false);
     await refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps

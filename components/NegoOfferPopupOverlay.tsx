@@ -47,7 +47,9 @@ export default function NegoOfferPopupOverlay() {
           </button>
           <div className="flex items-center gap-2 text-white/70 mb-1">
             <HandCoins size={16} />
-            <span className="text-xs font-bold uppercase tracking-wide">Ada pesanan yang ingin bernegosiasi</span>
+            <span className="text-xs font-bold uppercase tracking-wide">
+              {popup.kind === "offer" ? "Ada pesanan yang ingin bernegosiasi" : "Ada yang menanyakan harga"}
+            </span>
           </div>
           <h2 className="text-lg font-extrabold leading-snug">{popup.job_title}</h2>
         </div>
@@ -64,7 +66,13 @@ export default function NegoOfferPopupOverlay() {
             <div className="min-w-0">
               <p className="font-bold text-ink truncate">{popup.offerer_name}</p>
               <p className="text-sm text-ink/60">
-                Menawar <span className="font-semibold text-turquoise-dark">{formatRupiah(popup.amount)}</span>
+                {popup.kind === "offer" && popup.amount != null ? (
+                  <>
+                    Menawar <span className="font-semibold text-turquoise-dark">{formatRupiah(popup.amount)}</span>
+                  </>
+                ) : (
+                  "Ingin menanyakan & menegosiasikan harga untuk postingan ini"
+                )}
               </p>
             </div>
           </div>
@@ -74,7 +82,7 @@ export default function NegoOfferPopupOverlay() {
             disabled={processing}
             className="btn-primary w-full !py-2.5 text-sm mt-5"
           >
-            {processing ? "Membuka..." : "Lihat Sekarang"}
+            {processing ? "Membuka..." : popup.kind === "offer" ? "Lihat Sekarang" : "Buka & Balas Chat"}
           </button>
         </div>
       </div>
