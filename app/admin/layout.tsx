@@ -18,13 +18,15 @@ import {
   MessageCircle,
   AlertTriangle,
   Scale,
-  Megaphone
+  Megaphone,
+  MapPin
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 
 const NAV = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard },
   { href: "/admin/users", label: "Pengguna", icon: Users },
+  { href: "/admin/lokasi-pengguna", label: "Lokasi Pengguna", icon: MapPin },
   { href: "/admin/kyc", label: "Verifikasi Selfie KYC", icon: ShieldCheck },
   { href: "/admin/chats", label: "Monitoring Chat", icon: MessageCircle },
   { href: "/admin/disputes", label: "Sengketa Chat", icon: AlertTriangle },
