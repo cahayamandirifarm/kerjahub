@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import { usernameToEmail, isValidUsername, isValidPhone } from "@/lib/auth-helpers";
 import Link from "next/link";
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   return Promise.race([
-    promise,
+    Promise.resolve(promise),
     new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))
   ]);
 }
