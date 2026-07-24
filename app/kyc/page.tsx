@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { ShieldCheck, Volume2, VolumeX, Bell, BellOff } from "lucide-react";
 import { getPushSubscriptionStatus, pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
+import { compressImage } from "@/lib/image-compress";
 
 export default function KycPage() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function KycPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [compressingSelfie, setCompressingSelfie] = useState(false);
+  const [compressingKtp, setCompressingKtp] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<"unsupported" | "denied" | "subscribed" | "unsubscribed" | "loading">("loading");
 
@@ -43,6 +46,39 @@ export default function KycPage() {
       alert(err.message || "Gagal mengaktifkan notifikasi push.");
       setPushStatus(await getPushSubscriptionStatus());
     }
+  }
+
+  async function handleSelfieChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelfieFile(null);
+      return;
+    }
+    setCompressingSelfie(true);
+    try {
+      const compressed = await compressImage(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.75, maxSizeBytes: 700 * 1024 });
+      setSelfieFile(compressed);
+    } catch {
+      setSelfieFile(file);
+    }
+    setCompressingSelfie(false);
+  }
+
+  async function handleKtpChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setKtpFile(null);
+      return;
+    }
+    setCompressingKtp(true);
+    try {
+      // KTP butuh resolusi lebih tinggi dari selfie supaya tulisan tetap terbaca.
+      const compressed = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.75, maxSizeBytes: 1024 * 1024 });
+      setKtpFile(compressed);
+    } catch {
+      setKtpFile(file);
+    }
+    setCompressingKtp(false);
   }
 
   async function loadProfile() {
@@ -169,16 +205,24 @@ export default function KycPage() {
               {profile?.kyc_selfie_url && (
                 <img src={profile.kyc_selfie_url} alt="Selfie" className="w-20 h-20 rounded-full object-cover mb-2 border border-line" />
               )}
-              <input className="input" type="file" accept="image/*" capture="user" onChange={(e) => setSelfieFile(e.target.files?.[0] || null)} />
-              <p className="text-xs text-ink/40 mt-1">Foto selfie wajah yang jelas, langsung dari kamera depan.</p>
+              <input className="input" type="file" accept="image/*" capture="user" onChange={handleSelfieChange} disabled={compressingSelfie} />
+              {compressingSelfie ? (
+                <p className="text-xs text-turquoise-dark mt-1">Mengompres foto...</p>
+              ) : (
+                <p className="text-xs text-ink/40 mt-1">Foto selfie wajah yang jelas, langsung dari kamera depan. Otomatis dikompres sebelum diunggah.</p>
+              )}
             </div>
             <div>
               <label className="label">Foto KTP / SIM</label>
               {profile?.kyc_ktp_url && (
                 <img src={profile.kyc_ktp_url} alt="KTP/SIM" className="w-full max-h-40 object-cover rounded-xl mb-2 border border-line" />
               )}
-              <input className="input" type="file" accept="image/*" capture="environment" onChange={(e) => setKtpFile(e.target.files?.[0] || null)} />
-              <p className="text-xs text-ink/40 mt-1">Foto KTP atau SIM yang masih berlaku, pastikan seluruh data terbaca jelas.</p>
+              <input className="input" type="file" accept="image/*" capture="environment" onChange={handleKtpChange} disabled={compressingKtp} />
+              {compressingKtp ? (
+                <p className="text-xs text-turquoise-dark mt-1">Mengompres foto...</p>
+              ) : (
+                <p className="text-xs text-ink/40 mt-1">Foto KTP atau SIM yang masih berlaku, pastikan seluruh data terbaca jelas. Otomatis dikompres sebelum diunggah.</p>
+              )}
             </div>
             <div className="rounded-xl bg-turquoise/10 border border-turquoise/20 px-3 py-2.5">
               <p className="text-xs text-ink/70 leading-relaxed">
@@ -189,8 +233,8 @@ export default function KycPage() {
               <p className="text-sm text-clay">Alasan ditolak: {profile.kyc_rejected_reason}</p>
             )}
             {message && <p className="text-sm text-turquoise">{message}</p>}
-            <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? "Menyimpan..." : "Kirim Verifikasi"}
+            <button type="submit" disabled={loading || compressingSelfie || compressingKtp} className="btn-primary w-full">
+              {loading ? "Menyimpan..." : compressingSelfie || compressingKtp ? "Mengompres foto..." : "Kirim Verifikasi"}
             </button>
           </form>
         )}
