@@ -5,7 +5,7 @@ import { ShieldAlert } from "lucide-react";
 type Props = {
   open: boolean;
   /** Status kyc saat ini, dipakai untuk menyesuaikan pesan (menunggu review vs belum sama sekali vs ditolak). */
-  kycStatus?: "belum" | "menunggu" | "ditolak" | null;
+  kycStatus?: "belum" | "menunggu" | "ditolak" | "terverifikasi" | null;
   onClose: () => void;
 };
 
