@@ -33,10 +33,23 @@ export default function ListingForm({ listingId, initial }: Props) {
   const [error, setError] = useState<string | null>(null);
   const existingImages = [initial?.cover_image, ...(initial?.gallery_images ?? [])].filter(Boolean) as string[];
 
+  const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per foto
+
   function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || []);
     if (selected.length > 5) {
       setError("Maksimal 5 foto.");
+      e.target.value = "";
+      setFiles([]);
+      return;
+    }
+    const oversized = selected.filter((f) => f.size > MAX_SIZE_BYTES);
+    if (oversized.length > 0) {
+      setError(
+        `Ukuran foto maksimal 1MB. ${oversized.length > 1 ? "Beberapa foto" : "Foto \"" + oversized[0].name + "\""} melebihi batas, silakan kompres atau pilih foto lain.`
+      );
+      e.target.value = "";
+      setFiles([]);
       return;
     }
     setError(null);
@@ -49,6 +62,10 @@ export default function ListingForm({ listingId, initial }: Props) {
 
     if (!isEdit && files.length < 1) {
       setError("Wajib unggah minimal 1 foto produk.");
+      return;
+    }
+    if (files.some((f) => f.size > MAX_SIZE_BYTES)) {
+      setError("Ada foto yang melebihi batas ukuran 1MB. Silakan pilih ulang foto produk.");
       return;
     }
 
@@ -116,7 +133,7 @@ export default function ListingForm({ listingId, initial }: Props) {
       <div className="max-w-lg mx-auto">
         <h1 className="font-display text-2xl font-semibold mb-1">{isEdit ? "Edit Produk Digital" : "Jual Produk Digital"}</h1>
         <p className="text-sm text-ink/60 mb-6">
-          {isEdit ? "Perbarui detail produkmu. Kosongkan unggah foto kalau tidak ingin menggantinya." : "Wajib unggah minimal 1 foto, maksimal 5 foto produk."}
+          {isEdit ? "Perbarui detail produkmu. Kosongkan unggah foto kalau tidak ingin menggantinya." : "Wajib unggah minimal 1 foto, maksimal 5 foto produk. Ukuran tiap foto maksimal 1MB."}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,7 +179,7 @@ export default function ListingForm({ listingId, initial }: Props) {
             />
           </div>
           <div>
-            <label className="label">Foto Produk (1-5 foto)</label>
+            <label className="label">Foto Produk (1-5 foto, maks 1MB/foto)</label>
             {isEdit && existingImages.length > 0 && files.length === 0 && (
               <div className="grid grid-cols-5 gap-2 mb-2">
                 {existingImages.map((img, i) => (
