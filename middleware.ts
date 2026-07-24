@@ -23,9 +23,26 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // PENTING (perbaikan kecepatan): sebelumnya pakai supabase.auth.getUser(),
+  // yang melakukan ROUND-TRIP JARINGAN ke server Auth Supabase untuk
+  // validasi token SETIAP KALI ada navigasi ke rute terproteksi -- middleware
+  // ini jalan di server untuk SEMUA request, jadi lambatnya kerasa sama saja
+  // di semua browser/perangkat (bukan sesuatu yang bisa "cuma kena HP
+  // tertentu"), persis seperti yang dilaporkan.
+  //
+  // Middleware ini cuma butuh tahu "ada sesi login atau tidak" buat
+  // redirect ke /login (murni buat UX) -- bukan lapisan keamanan
+  // sebenarnya. Keamanan sesungguhnya tetap dijaga oleh RLS Postgres +
+  // setiap halaman/RPC yang tetap validasi ulang penggunanya sendiri (lihat
+  // mis. app/dashboard/employer/page.tsx yang tetap panggil
+  // supabase.auth.getUser() sendiri). Jadi di sini cukup getSession(), yang
+  // cuma decode cookie JWT secara lokal TANPA network call sama sekali --
+  // menghilangkan satu round-trip penuh dari SETIAP navigasi ke
+  // /dashboard, /kyc, /chat, /notifications, /admin.
   const {
-    data: { user }
-  } = await supabase.auth.getUser();
+    data: { session }
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   const path = request.nextUrl.pathname;
   const protectedPrefixes = ["/dashboard", "/kyc", "/chat", "/notifications"];
