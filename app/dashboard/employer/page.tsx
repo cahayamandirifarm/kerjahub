@@ -4,6 +4,7 @@ import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
 import { Wallet, Plus, ArrowDownToLine, Users, Store, Landmark, History, Share2 } from "lucide-react";
 import TopUpButton from "@/components/TopUpButton";
+import LiveWalletBalance from "@/components/LiveWalletBalance";
 import JobPostingActions from "@/components/JobPostingActions";
 import ListingPostingActions from "@/components/ListingPostingActions";
 import { DIGITAL_CATEGORIES } from "@/lib/types";
@@ -73,7 +74,7 @@ export default async function EmployerDashboard() {
           <Wallet size={16} /> Saldo Dompet
         </div>
         <p className="font-display font-bold mt-1 tracking-tight" style={{ fontSize: 32, color: "#ffffff" }}>
-          {formatRupiah(profile?.wallet_balance)}
+          <LiveWalletBalance userId={user.id} initialBalance={profile?.wallet_balance ?? 0} />
         </p>
         <div className="flex flex-wrap gap-3 mt-4">
           <TopUpButton className="btn-primary !px-4 !py-2 !text-sm !shadow-none gap-1" />

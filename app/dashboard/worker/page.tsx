@@ -4,6 +4,7 @@ import Link from "next/link";
 import StatusBadge from "@/components/StatusStepper";
 import { Wallet, ArrowDownToLine, Landmark, History, Briefcase, Plus, Share2 } from "lucide-react";
 import JobPostingActions from "@/components/JobPostingActions";
+import LiveWalletBalance from "@/components/LiveWalletBalance";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
@@ -56,7 +57,7 @@ export default async function WorkerDashboard() {
           <Wallet size={16} /> Saldo Dompet
         </div>
         <p className="font-display font-bold mt-1 tracking-tight" style={{ fontSize: 32, color: "#ffffff" }}>
-          {formatRupiah(profile?.wallet_balance)}
+          <LiveWalletBalance userId={user.id} initialBalance={profile?.wallet_balance ?? 0} />
         </p>
         <div className="flex flex-wrap gap-3 mt-4">
           <Link

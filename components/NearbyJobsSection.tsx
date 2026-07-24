@@ -79,13 +79,15 @@ export default function NearbyJobsSection() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           // Kunci cache dibulatkan ke ~1km supaya pergerakan GPS kecil tetap
-          // pakai cache yang sama, tapi tetap segar tiap 15 menit atau kalau
-          // pengguna benar-benar berpindah lokasi.
+          // pakai cache yang sama. Hasil dianggap valid sampai 7 hari --
+          // sekali diambil dipakai terus dari cache device, TIDAK query ulang
+          // ke Supabase sampai 7 hari berlalu (sesuai permintaan: nearby
+          // jangan ambil resource API lagi selama masih dalam rentang itu).
           const latKey = pos.coords.latitude.toFixed(2);
           const lngKey = pos.coords.longitude.toFixed(2);
           swrFetch<NearbyItem[]>(
             `nearby:${latKey}:${lngKey}`,
-            30 * 60 * 1000,
+            7 * 24 * 60 * 60 * 1000,
             async () => {
               const [jobsRes, workersRes] = await Promise.all([
                 jobsEnabled
