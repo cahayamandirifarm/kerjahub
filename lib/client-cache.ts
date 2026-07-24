@@ -22,6 +22,12 @@ function openDB(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === "undefined") return Promise.resolve(null);
   if (!dbPromise) {
     dbPromise = new Promise((resolve) => {
+      let settled = false;
+      const finish = (value: IDBDatabase | null) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
       try {
         const req = indexedDB.open(DB_NAME, 1);
         req.onupgradeneeded = () => {
@@ -29,11 +35,22 @@ function openDB(): Promise<IDBDatabase | null> {
             req.result.createObjectStore(STORE_NAME);
           }
         };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
+        req.onsuccess = () => finish(req.result);
+        req.onerror = () => finish(null);
+        // Bisa kejadian: tab lain masih pegang koneksi versi lama pas ada
+        // upgrade, request "blocked" -- tanpa handler ini, onsuccess/onerror
+        // TIDAK PERNAH terpanggil, jadi promise ini nge-hang selamanya.
+        // Kejadian nyata: ini bikin loadProfile() di AuthContext ikut
+        // nge-hang (nunggu readCache yang tidak pernah selesai), sehingga
+        // login/registrasi kelihatan lama/gagal padahal auth-nya sendiri
+        // sudah sukses.
+        req.onblocked = () => finish(null);
       } catch {
-        resolve(null);
+        finish(null);
       }
+      // Jaring pengaman terakhir: apa pun yang terjadi, jangan pernah
+      // biarkan pemanggil nunggu cache lebih dari 1.5 detik.
+      setTimeout(() => finish(null), 1500);
     });
   }
   return dbPromise;
@@ -41,34 +58,52 @@ function openDB(): Promise<IDBDatabase | null> {
 
 type Entry<T> = { value: T; savedAt: number };
 
+// Jaring pengaman generik -- bungkus promise apa pun supaya tidak pernah
+// digantung selamanya kalau IndexedDB berulah (lihat catatan di openDB()).
+function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 1500): Promise<T> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(fallback), ms);
+    promise.then((v) => {
+      clearTimeout(t);
+      resolve(v);
+    });
+  });
+}
+
 async function idbGet<T>(key: string): Promise<Entry<T> | null> {
   const db = await openDB();
   if (!db) return null;
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const req = tx.objectStore(STORE_NAME).get(key);
-      req.onsuccess = () => resolve((req.result as Entry<T>) ?? null);
-      req.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
+  return withTimeout(
+    new Promise<Entry<T> | null>((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const req = tx.objectStore(STORE_NAME).get(key);
+        req.onsuccess = () => resolve((req.result as Entry<T>) ?? null);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    }),
+    null
+  );
 }
 
 async function idbSet<T>(key: string, entry: Entry<T>): Promise<void> {
   const db = await openDB();
   if (!db) return;
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(entry, key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
+  return withTimeout(
+    new Promise<void>((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put(entry, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    }),
+    undefined
+  );
 }
 
 function readLocal<T>(key: string): Entry<T> | null {

@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { usePathname, useRouter } from "next/navigation";
-import { readCache, writeCache } from "@/lib/client-cache";
 import type { User } from "@supabase/supabase-js";
 
 interface Profile {
@@ -32,15 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   async function loadProfile(uid: string) {
-    // Tampilkan dulu profil dari cache lokal (kalau ada) supaya UI (nama,
-    // avatar, dll) langsung terisi tanpa nunggu network -- tetap lanjut
-    // fetch data terbaru dari server di bawah, jadi datanya selalu disegarkan
-    // ulang tiap kali login/sesi berubah, bukan menggantikan fetch.
-    const cachedProfile = await readCache<Profile>(`profile:${uid}`, "idb");
-    if (cachedProfile && cachedProfile.role !== "admin") {
-      setProfile(cachedProfile);
-    }
-
+    // Dikembalikan ke versi sederhana sebelum fitur cache (IndexedDB) --
+    // fungsi ini dipanggil tiap kali ada auth state baru, termasuk PERSIS
+    // setelah login & setelah daftar akun (auto sign-in). Cache IndexedDB
+    // (readCache/writeCache) bisa nge-hang di beberapa perangkat/browser
+    // (lihat catatan perbaikan di lib/client-cache.ts), yang bikin proses
+    // ini ikut nge-hang -- kelihatan seperti login/daftar lama atau gagal
+    // padahal auth-nya sendiri sudah sukses. Jalur ini sekarang cuma
+    // fetch langsung ke server, sama seperti sebelum fitur cache ada.
     const { data } = await supabase
       .from("profiles")
       .select("id, username, full_name, avatar_url, role, notif_sound_enabled")
@@ -59,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setProfile(data as Profile | null);
-    if (data) await writeCache(`profile:${uid}`, data, "idb");
   }
 
   useEffect(() => {
