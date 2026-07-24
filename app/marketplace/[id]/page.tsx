@@ -6,6 +6,7 @@ import BuyButton from "./BuyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
 import Link from "next/link";
 import { CheckCircle2, Eye } from "lucide-react";
+import ViewTracker from "@/components/ViewTracker";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n).toLocaleString("id-ID");
@@ -21,14 +22,12 @@ export default async function DigitalListingPage({ params }: { params: { id: str
 
   if (!listing) notFound();
 
-  // Catat 1 view -- tidak ditunggu, kegagalan diabaikan.
-  supabase.rpc("increment_listing_views", { p_listing_id: params.id }).then(() => {});
-
   const seller = (listing as any).profiles;
   const images = [listing.cover_image, ...(listing.gallery_images || [])];
 
   return (
     <div className="min-h-screen pb-16">
+      <ViewTracker type="listing" id={listing.id} />
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="grid grid-cols-4 gap-2 mb-4">

@@ -6,6 +6,7 @@ import { MapPin, Clock, ShieldCheck, Star, CheckCircle2, Eye } from "lucide-reac
 import Link from "next/link";
 import ApplyButton from "./ApplyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
+import ViewTracker from "@/components/ViewTracker";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -21,15 +22,12 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
 
   if (!job) notFound();
 
-  // Catat 1 view -- tidak perlu ditunggu, kegagalan diabaikan supaya
-  // tidak menghambat render halaman.
-  supabase.rpc("increment_job_views", { p_job_id: params.jobid }).then(() => {});
-
   const employer = (job as any).profiles;
   const isWorkerListing = job.posted_by_role === "worker";
 
   return (
     <div className="min-h-screen pb-16">
+      <ViewTracker type="job" id={job.id} />
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center gap-1.5 flex-wrap">
