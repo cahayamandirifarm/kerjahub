@@ -85,21 +85,21 @@ export default function NearbyJobsSection() {
           const lngKey = pos.coords.longitude.toFixed(2);
           swrFetch<NearbyItem[]>(
             `nearby:${latKey}:${lngKey}`,
-            15 * 60 * 1000,
+            30 * 60 * 1000,
             async () => {
               const [jobsRes, workersRes] = await Promise.all([
                 jobsEnabled
                   ? supabase.rpc("nearby_jobs", {
                       p_lat: pos.coords.latitude,
                       p_lng: pos.coords.longitude,
-                      p_limit: 200
+                      p_limit: 40
                     })
                   : Promise.resolve({ data: [] as NearbyJob[] }),
                 workersEnabled
                   ? supabase.rpc("nearby_workers", {
                       p_lat: pos.coords.latitude,
                       p_lng: pos.coords.longitude,
-                      p_limit: 200
+                      p_limit: 40
                     })
                   : Promise.resolve({ data: [] as NearbyWorker[] })
               ]);

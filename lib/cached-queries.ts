@@ -54,10 +54,11 @@ function sortByPopularity<T extends { view_count?: number; created_at: string; p
 // escrow, transaksi, chat, notifikasi, dsb) -- itu wajib selalu fresh per
 // pengguna dan tidak boleh di-cache lintas pengguna.
 
-// Postingan kerja terbuka di beranda -- cache 15 menit.
-// Ambil lebih banyak baris dari yang akan ditampilkan (limit 60) karena
-// setelah di-dedup per akun (judul sama/mirip disisakan 1) jumlahnya bisa
-// berkurang -- lalu dipotong ke 30 hasil akhir.
+// Postingan kerja terbuka di beranda -- cache 30 menit (dinaikkan dari 15
+// menit untuk mengurangi frekuensi query ke DB & beban CPU compute yang
+// kecil). Ambil sedikit lebih banyak baris dari yang ditampilkan (limit 40)
+// karena setelah di-dedup per akun (judul sama/mirip disisakan 1) jumlahnya
+// bisa berkurang -- lalu dipotong ke 30 hasil akhir.
 export const getHomeJobs = unstable_cache(
   async (tipe: "employer" | "worker", kategori?: string) => {
     const supabase = createPublicClient();
@@ -68,7 +69,7 @@ export const getHomeJobs = unstable_cache(
       .eq("is_active", true)
       .eq("posted_by_role", tipe)
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(40);
     if (kategori) query = query.eq("category", kategori);
     const { data } = await query;
     const ranked = sortByPopularity(data ?? []);
@@ -76,12 +77,12 @@ export const getHomeJobs = unstable_cache(
     return deduped.slice(0, 30);
   },
   ["home-jobs"],
-  { revalidate: 900, tags: ["jobs-list"] }
+  { revalidate: 1800, tags: ["jobs-list"] }
 );
 
-// Listing marketplace digital aktif -- cache 15 menit. Sama seperti
-// getHomeJobs: diambil lebih banyak lalu di-dedup per akun (nama
-// produk/jasa sama atau mirip -> hanya 1 yang tampil).
+// Listing marketplace digital aktif -- cache 30 menit (dinaikkan dari 15
+// menit, alasan sama seperti getHomeJobs). Diambil sedikit lebih banyak lalu
+// di-dedup per akun (nama produk/jasa sama atau mirip -> hanya 1 yang tampil).
 export const getMarketplaceListings = unstable_cache(
   async (kategori?: string) => {
     const supabase = createPublicClient();
@@ -90,7 +91,7 @@ export const getMarketplaceListings = unstable_cache(
       .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
       .eq("status", "aktif")
       .order("created_at", { ascending: false })
-      .limit(80);
+      .limit(55);
     if (kategori) query = query.eq("category", kategori);
     const { data } = await query;
     const ranked = sortByPopularity(data ?? []);
@@ -98,7 +99,7 @@ export const getMarketplaceListings = unstable_cache(
     return deduped.slice(0, 40);
   },
   ["marketplace-listings"],
-  { revalidate: 900, tags: ["marketplace-list"] }
+  { revalidate: 1800, tags: ["marketplace-list"] }
 );
 
 // Banner promosi aktif -- cache 24 jam.
