@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
@@ -12,31 +11,22 @@ import { Search } from "lucide-react";
 import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 import { categoryPostCopy } from "@/lib/category-copy";
+import { getHomeJobs } from "@/lib/cached-queries";
 
-export const revalidate = 0;
+// Daftar pekerjaan di beranda tidak lagi query Supabase langsung di setiap
+// kunjungan -- diambil lewat getHomeJobs (Next.js Data Cache, cache 15
+// menit). Karena halaman ini tidak lagi memanggil cookies() sama sekali,
+// Next.js/Vercel bisa menyajikan halaman ini dari cache (ISR) ke banyak
+// pengunjung sekaligus, bukan render ulang + query DB di tiap request.
+export const revalidate = 900;
 
 export default async function HomePage({
   searchParams
 }: {
   searchParams: { kategori?: string; tipe?: string };
 }) {
-  const supabase = createClient();
   const tipe = searchParams.tipe === "jasa" ? "worker" : "employer";
-
-  let query = supabase
-    .from("jobs")
-    .select("*")
-    .eq("stage", "terbuka")
-    .eq("is_active", true)
-    .eq("posted_by_role", tipe)
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (searchParams.kategori) {
-    query = query.eq("category", searchParams.kategori);
-  }
-
-  const { data: jobs } = await query;
+  const jobs = await getHomeJobs(tipe, searchParams.kategori);
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import { reverseGeocode } from "@/lib/geo-helpers";
+import { swrFetch } from "@/lib/client-cache";
 import { MapPin, X } from "lucide-react";
 
 export default function LocationPrompt({ onLocated }: { onLocated?: (lat: number, lng: number) => void }) {
@@ -14,9 +15,20 @@ export default function LocationPrompt({ onLocated }: { onLocated?: (lat: number
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("platform_settings").select("value").eq("key", "gps_request_enabled").single();
-      const enabled = data?.value !== "false";
-      setSettingEnabled(enabled);
+      let enabled = true;
+      await swrFetch<boolean>(
+        "settings:gps_request_enabled",
+        24 * 60 * 60 * 1000,
+        async () => {
+          const { data } = await supabase.from("platform_settings").select("value").eq("key", "gps_request_enabled").single();
+          return data?.value !== "false";
+        },
+        (value) => {
+          enabled = value;
+          setSettingEnabled(value);
+        },
+        "local"
+      );
       if (!enabled) return;
 
       const skipped = sessionStorage.getItem("kerjahub_location_skipped");

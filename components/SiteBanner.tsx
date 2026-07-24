@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { swrFetch } from "@/lib/client-cache";
 import { Megaphone } from "lucide-react";
 
 export default function SiteBanner() {
@@ -8,14 +9,16 @@ export default function SiteBanner() {
   const [text, setText] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("platform_settings")
-      .select("value")
-      .eq("key", "site_banner_text")
-      .single()
-      .then(({ data }) => {
-        if (data?.value) setText(data.value);
-      });
+    swrFetch<string | null>(
+      "settings:site_banner_text",
+      24 * 60 * 60 * 1000,
+      async () => {
+        const { data } = await supabase.from("platform_settings").select("value").eq("key", "site_banner_text").single();
+        return data?.value ?? null;
+      },
+      (value) => setText(value),
+      "local"
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

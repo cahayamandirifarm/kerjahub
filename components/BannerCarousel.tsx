@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { swrFetch } from "@/lib/client-cache";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -17,12 +18,22 @@ export default function BannerCarousel() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    supabase
-      .from("banners")
-      .select("id, title, image_url, link_url")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => setBanners(data || []));
+    // Banner promosi jarang berubah -- cache 24 jam, tampilkan versi cache
+    // dulu (kalau ada) baru diperbarui diam-diam di background.
+    swrFetch<Banner[]>(
+      "banners:active",
+      24 * 60 * 60 * 1000,
+      async () => {
+        const { data } = await supabase
+          .from("banners")
+          .select("id, title, image_url, link_url")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
+        return data || [];
+      },
+      (data) => setBanners(data),
+      "local"
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

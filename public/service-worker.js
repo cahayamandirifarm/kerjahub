@@ -1,15 +1,24 @@
-const CACHE_NAME = "kerjahub-cache-v4-push-visibility";
+// Versi cache dinaikkan tiap kali daftar aset/precache berubah -- browser
+// otomatis pakai cache baru dan menghapus semua cache versi lama lewat
+// event "activate" di bawah (cache versioning).
+const CACHE_NAME = "kerjahub-cache-v5-perf-cache";
 const OFFLINE_URL = "/offline.html";
 
-// Aset dasar yang di-cache saat install (app shell).
-// Halaman lain di-cache otomatis saat dikunjungi (runtime caching di bawah).
+// Aset dasar (app shell) yang di-cache saat install: HTML offline fallback,
+// manifest PWA, dan seluruh ukuran icon yang dipakai (home screen, splash,
+// maskable Android). Halaman/CSS/JS/gambar lain di-cache otomatis saat
+// dikunjungi lewat runtime caching di bawah.
 const PRECACHE_ASSETS = [
   "/",
   "/offline.html",
   "/manifest.json",
   "/icons/icon-192.png",
+  "/icons/icon-256.png",
+  "/icons/icon-384.png",
   "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png"
+  "/icons/icon-maskable-192.png",
+  "/icons/icon-maskable-512.png",
+  "/icons/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {

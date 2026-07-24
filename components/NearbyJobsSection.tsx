@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistance } from "@/lib/geo-helpers";
+import { swrFetch } from "@/lib/client-cache";
 import { MapPin, Navigation, Star, CheckCircle2, Briefcase, User } from "lucide-react";
 import Link from "next/link";
 import PostCTAButtons from "@/components/PostCTAButtons";
@@ -53,10 +54,21 @@ export default function NearbyJobsSection() {
 
   useEffect(() => {
     (async () => {
-      const { data: settings } = await supabase
-        .from("platform_settings")
-        .select("key, value")
-        .in("key", ["nearby_jobs_enabled", "nearby_workers_enabled", "map_unit"]);
+      const settings = await new Promise<{ key: string; value: string }[]>((resolve) => {
+        swrFetch<{ key: string; value: string }[]>(
+          "settings:nearby",
+          24 * 60 * 60 * 1000,
+          async () => {
+            const { data } = await supabase
+              .from("platform_settings")
+              .select("key, value")
+              .in("key", ["nearby_jobs_enabled", "nearby_workers_enabled", "map_unit"]);
+            return data || [];
+          },
+          (value) => resolve(value),
+          "local"
+        );
+      });
       const jobsEnabled = settings?.find((s) => s.key === "nearby_jobs_enabled")?.value !== "false";
       const workersEnabled = settings?.find((s) => s.key === "nearby_workers_enabled")?.value !== "false";
       const isEnabled = jobsEnabled || workersEnabled;
@@ -65,32 +77,39 @@ export default function NearbyJobsSection() {
       if (!isEnabled || !navigator.geolocation) return;
 
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          // Tanpa limit kecil / tanpa sub-menu terpisah: ambil semua lowongan
-          // & pekerja dalam radius yang sudah diatur admin (default_radius_km),
-          // lalu gabungkan jadi satu daftar terurut berdasarkan jarak.
-          const [jobsRes, workersRes] = await Promise.all([
-            jobsEnabled
-              ? supabase.rpc("nearby_jobs", {
-                  p_lat: pos.coords.latitude,
-                  p_lng: pos.coords.longitude,
-                  p_limit: 200
-                })
-              : Promise.resolve({ data: [] as NearbyJob[] }),
-            workersEnabled
-              ? supabase.rpc("nearby_workers", {
-                  p_lat: pos.coords.latitude,
-                  p_lng: pos.coords.longitude,
-                  p_limit: 200
-                })
-              : Promise.resolve({ data: [] as NearbyWorker[] })
-          ]);
-
-          const jobs: NearbyItem[] = (jobsRes.data || []).map((j: any) => ({ ...j, kind: "job" as const }));
-          const workers: NearbyItem[] = (workersRes.data || []).map((w: any) => ({ ...w, kind: "worker" as const }));
-
-          const merged = [...jobs, ...workers].sort((a, b) => a.distance_m - b.distance_m);
-          setItems(merged);
+        (pos) => {
+          // Kunci cache dibulatkan ke ~1km supaya pergerakan GPS kecil tetap
+          // pakai cache yang sama, tapi tetap segar tiap 15 menit atau kalau
+          // pengguna benar-benar berpindah lokasi.
+          const latKey = pos.coords.latitude.toFixed(2);
+          const lngKey = pos.coords.longitude.toFixed(2);
+          swrFetch<NearbyItem[]>(
+            `nearby:${latKey}:${lngKey}`,
+            15 * 60 * 1000,
+            async () => {
+              const [jobsRes, workersRes] = await Promise.all([
+                jobsEnabled
+                  ? supabase.rpc("nearby_jobs", {
+                      p_lat: pos.coords.latitude,
+                      p_lng: pos.coords.longitude,
+                      p_limit: 200
+                    })
+                  : Promise.resolve({ data: [] as NearbyJob[] }),
+                workersEnabled
+                  ? supabase.rpc("nearby_workers", {
+                      p_lat: pos.coords.latitude,
+                      p_lng: pos.coords.longitude,
+                      p_limit: 200
+                    })
+                  : Promise.resolve({ data: [] as NearbyWorker[] })
+              ]);
+              const jobs: NearbyItem[] = (jobsRes.data || []).map((j: any) => ({ ...j, kind: "job" as const }));
+              const workers: NearbyItem[] = (workersRes.data || []).map((w: any) => ({ ...w, kind: "worker" as const }));
+              return [...jobs, ...workers].sort((a, b) => a.distance_m - b.distance_m);
+            },
+            (merged) => setItems(merged),
+            "idb"
+          );
         },
         () => setItems(null),
         { maximumAge: 10 * 60 * 1000 }

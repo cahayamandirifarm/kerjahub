@@ -1,19 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { DIGITAL_CATEGORIES, DigitalListing } from "@/lib/types";
 import Link from "next/link";
 import { Plus, ShoppingBag } from "lucide-react";
+import { getMarketplaceListings } from "@/lib/cached-queries";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n).toLocaleString("id-ID");
 }
 
+// Listing di-cache 15 menit lewat getMarketplaceListings (Next.js Data
+// Cache) -- halaman ini tidak lagi query Supabase & tidak lagi pakai
+// cookies(), jadi bisa ikut di-cache (ISR) di Vercel per kombinasi kategori.
+export const revalidate = 900;
+
 export default async function MarketplacePage({ searchParams }: { searchParams: { kategori?: string } }) {
-  const supabase = createClient();
-  let query = supabase.from("digital_listings").select("*").eq("status", "aktif").order("created_at", { ascending: false });
-  if (searchParams.kategori) query = query.eq("category", searchParams.kategori);
-  const { data: listings } = await query;
+  const listings = await getMarketplaceListings(searchParams.kategori);
 
   return (
     <div className="min-h-screen pb-24">
@@ -65,7 +67,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
               className="card group overflow-hidden block hover:-translate-y-1 hover:shadow-soft transition-all duration-200"
             >
               <div className="relative">
-                <img src={item.cover_image} alt={item.title} className="w-full aspect-square object-cover" />
+                <img src={item.cover_image} alt={item.title} loading="lazy" decoding="async" className="w-full aspect-square object-cover" />
                 {item.status === "terjual" && (
                   <span className="badge-sold absolute top-2 left-2 bg-white/90">Terjual</span>
                 )}
