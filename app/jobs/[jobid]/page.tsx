@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 import StatusBadge from "@/components/StatusStepper";
 import { notFound } from "next/navigation";
-import { MapPin, Clock, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, ShieldCheck, Star, CheckCircle2, Eye } from "lucide-react";
+import Link from "next/link";
 import ApplyButton from "./ApplyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
 
@@ -12,9 +13,17 @@ function formatRupiah(n: number) {
 
 export default async function JobDetailPage({ params }: { params: { jobid: string } }) {
   const supabase = createClient();
-  const { data: job } = await supabase.from("jobs").select("*, profiles!jobs_employer_id_fkey(full_name, avatar_url, kyc_status)").eq("id", params.jobid).single();
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, kyc_status, rating_avg, rating_count, completed_jobs_count)")
+    .eq("id", params.jobid)
+    .single();
 
   if (!job) notFound();
+
+  // Catat 1 view -- tidak perlu ditunggu, kegagalan diabaikan supaya
+  // tidak menghambat render halaman.
+  supabase.rpc("increment_job_views", { p_job_id: params.jobid }).then(() => {});
 
   const employer = (job as any).profiles;
   const isWorkerListing = job.posted_by_role === "worker";
@@ -57,6 +66,11 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
           <span className="inline-flex items-center gap-1.5">
             <Clock size={15} /> {job.estimated_duration}
           </span>
+          {!!job.view_count && (
+            <span className="inline-flex items-center gap-1.5">
+              <Eye size={15} /> {job.view_count}x dilihat
+            </span>
+          )}
         </div>
 
         <div className="card p-5 mt-6">
@@ -88,19 +102,34 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
         </div>
 
         {employer && (
-          <div className="card p-5 mt-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark">
+          <Link
+            href={`/profil/${employer.id}`}
+            className="card p-5 mt-4 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-soft transition-all duration-200"
+          >
+            <div className="w-11 h-11 rounded-full bg-turquoise-light flex items-center justify-center font-display font-semibold text-turquoise-dark shrink-0">
               {employer.full_name?.[0] ?? "?"}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-ink truncate">{employer.full_name}</p>
+              <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                <p className="text-xs text-ink/50 inline-flex items-center gap-1">
+                  <Star size={13} className="text-gold-dark fill-gold-dark" />
+                  {employer.rating_count > 0 ? `${employer.rating_avg?.toFixed(1)} (${employer.rating_count} ulasan)` : "Belum ada rating"}
+                </p>
+                {employer.completed_jobs_count > 0 && (
+                  <p className="text-xs text-ink/50 inline-flex items-center gap-1">
+                    <CheckCircle2 size={13} /> {employer.completed_jobs_count} selesai
+                  </p>
+                )}
+              </div>
               {employer.kyc_status === "terverifikasi" && (
-                <p className="text-xs text-turquoise inline-flex items-center gap-1">
+                <p className="text-xs text-turquoise inline-flex items-center gap-1 mt-0.5">
                   <ShieldCheck size={13} /> Identitas terverifikasi
                 </p>
               )}
+              <p className="text-xs font-semibold text-turquoise-dark mt-1">Lihat profil &amp; postingan lain →</p>
             </div>
-          </div>
+          </Link>
         )}
 
         <div className="mt-6 space-y-3">

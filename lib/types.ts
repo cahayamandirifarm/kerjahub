@@ -60,7 +60,22 @@ export interface Job {
   estimated_duration: string;
   stage: JobStage;
   assigned_worker_id: string | null;
+  view_count?: number;
   created_at: string;
+  // Diisi lewat join ke profiles saat query beranda/detail -- dipakai untuk
+  // menampilkan rating & jumlah pekerjaan selesai pemilik postingan.
+  profiles?: PosterStats | null;
+}
+
+// Info ringkas pemilik postingan/produk, dipakai untuk badge rating &
+// jumlah pesanan/pekerjaan selesai di kartu postingan/produk.
+export interface PosterStats {
+  id?: string;
+  full_name: string;
+  avatar_url?: string | null;
+  rating_avg: number;
+  rating_count: number;
+  completed_jobs_count: number;
 }
 
 export interface EscrowPayment {
@@ -116,7 +131,11 @@ export interface DigitalListing {
   cover_image: string;
   gallery_images: string[];
   status: "aktif" | "nonaktif" | "terjual" | "dihapus";
+  view_count?: number;
   created_at: string;
+  // Diisi lewat join ke profiles saat query marketplace/detail -- dipakai
+  // untuk menampilkan rating & jumlah pesanan selesai penjual.
+  profiles?: PosterStats | null;
 }
 
 export type DigitalOrderStatus =
