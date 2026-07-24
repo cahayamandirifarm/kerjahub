@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { DIGITAL_CATEGORIES } from "@/lib/types";
 import BuyButton from "./BuyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
+import WhatsAppInquiryButton from "@/components/WhatsAppInquiryButton";
 import Link from "next/link";
 import { CheckCircle2, Eye } from "lucide-react";
 import ViewTracker from "@/components/ViewTracker";
@@ -16,7 +17,7 @@ export default async function DigitalListingPage({ params }: { params: { id: str
   const supabase = createClient();
   const { data: listing } = await supabase
     .from("digital_listings")
-    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, rating_avg, rating_count, completed_jobs_count)")
+    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, phone, rating_avg, rating_count, completed_jobs_count)")
     .eq("id", params.id)
     .single();
 
@@ -84,6 +85,14 @@ export default async function DigitalListingPage({ params }: { params: { id: str
 
         <div className="mt-6 space-y-3">
           <ChatInquiryButton kind="listing" refId={listing.id} ownerId={listing.seller_id} />
+          <WhatsAppInquiryButton
+            kind="listing"
+            refId={listing.id}
+            ownerId={listing.seller_id}
+            ownerPhone={seller?.phone}
+            title={listing.title}
+            priceLabel={formatRupiah(listing.price)}
+          />
           <BuyButton listingId={listing.id} status={listing.status} stock={listing.stock} ownerId={listing.seller_id} />
         </div>
       </div>

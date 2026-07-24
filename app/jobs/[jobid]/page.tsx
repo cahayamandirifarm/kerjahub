@@ -6,6 +6,7 @@ import { MapPin, Clock, ShieldCheck, Star, CheckCircle2, Eye } from "lucide-reac
 import Link from "next/link";
 import ApplyButton from "./ApplyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
+import WhatsAppInquiryButton from "@/components/WhatsAppInquiryButton";
 import ViewTracker from "@/components/ViewTracker";
 
 function formatRupiah(n: number) {
@@ -16,7 +17,7 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
   const supabase = createClient();
   const { data: job } = await supabase
     .from("jobs")
-    .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, kyc_status, rating_avg, rating_count, completed_jobs_count)")
+    .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, phone, kyc_status, rating_avg, rating_count, completed_jobs_count)")
     .eq("id", params.jobid)
     .single();
 
@@ -24,6 +25,7 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
 
   const employer = (job as any).profiles;
   const isWorkerListing = job.posted_by_role === "worker";
+  const priceLabel = job.is_nego ? `Harga Nego (estimasi awal ${formatRupiah(job.price)})` : formatRupiah(job.price);
 
   return (
     <div className="min-h-screen pb-16">
@@ -142,6 +144,14 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
                 ? "Tanya Dulu Sebelum Ajak Kerja Sama"
                 : "Tanya Dulu Sebelum Melamar"
             }
+          />
+          <WhatsAppInquiryButton
+            kind="job"
+            refId={job.id}
+            ownerId={job.employer_id}
+            ownerPhone={employer?.phone}
+            title={job.title}
+            priceLabel={priceLabel}
           />
           {job.is_nego ? (
             job.stage === "terbuka" ? (
