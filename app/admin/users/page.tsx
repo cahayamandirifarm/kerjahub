@@ -3,6 +3,8 @@ import SuspendToggle from "./SuspendToggle";
 import DeleteUserButton from "./DeleteUserButton";
 import EditBalanceButton from "./EditBalanceButton";
 import { usernameToEmail } from "@/lib/auth-helpers";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 // UUID akun superadmin — hanya akun ini yang boleh mengubah saldo pengguna.
 // Dicocokkan dengan pengecekan yang sama di fungsi database admin_adjust_balance,
@@ -14,7 +16,7 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminUsersPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function AdminUsersPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
   const supabase = createClient();
   const {
     data: { user: currentUser }
@@ -22,12 +24,15 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
   const isSuperadmin = currentUser?.id === SUPERADMIN_ID;
 
   const q = searchParams?.q?.trim() || "";
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
 
-  let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  let query = supabase.from("profiles").select("*").order("created_at", { ascending: false }).range(from, to);
   if (q) {
     query = query.or(`username.ilike.%${q}%,full_name.ilike.%${q}%`);
   }
   const { data: users } = await query;
+  const { pageRows, hasNext } = splitPage(users, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -65,7 +70,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
             </tr>
           </thead>
           <tbody>
-            {users?.map((u) => (
+            {pageRows.map((u) => (
               <tr key={u.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{u.full_name}</td>
                 <td className="px-4 py-3 text-ink/70">{u.phone || "-"}</td>
@@ -104,12 +109,13 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
             ))}
           </tbody>
         </table>
-        {users?.length === 0 && (
+        {pageRows.length === 0 && (
           <div className="p-6 text-center text-ink/50 text-sm">
             {q ? `Tidak ada pengguna dengan nama/username "${q}".` : "Belum ada pengguna."}
           </div>
         )}
       </div>
+      <Pagination basePath="/admin/users" params={{ q: q || undefined }} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }

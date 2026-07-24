@@ -95,7 +95,60 @@ export const getHomeJobs = unstable_cache(
   { revalidate: 1800, tags: ["jobs-list"] }
 );
 
-// Listing marketplace digital aktif -- cache 30 menit (dinaikkan dari 15
+// Marker ringan untuk deteksi "ada yang berubah atau tidak" di beranda,
+// dipakai oleh /api/jobs/latest-marker + components/JobsAutoRefresh.tsx.
+// SENGAJA hanya ambil 1 baris (id + waktu) dari 2 query kecil yang kena
+// index (created_at, updated_at) -- BUKAN seluruh daftar job -- supaya
+// polling ringan dari device pengguna setiap beberapa detik tidak menambah
+// beban ke DB. Cache pendek (20 detik) sebagai rate-limit tambahan, TAPI
+// pakai tag yang sama ("jobs-list") dengan getHomeJobs supaya begitu ada
+// yang create/update/repost job (lihat lib/revalidate-listings.ts), marker
+// ini ikut langsung invalidated -- device lain yang sedang polling akan
+// dapat nilai baru di request berikutnya walau belum 20 detik, lalu baru
+// device itu yang memicu refresh daftar job (yang saat itu juga sudah
+// fresh di cache).
+export const getHomeJobsMarker = unstable_cache(
+  async (tipe: "employer" | "worker", kategori?: string) => {
+    const supabase = createPublicClient();
+
+    let latestPostQuery = supabase
+      .from("jobs")
+      .select("id, created_at")
+      .eq("stage", "terbuka")
+      .eq("is_active", true)
+      .eq("posted_by_role", tipe)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    let latestUpdateQuery = supabase
+      .from("jobs")
+      .select("id, updated_at")
+      .eq("stage", "terbuka")
+      .eq("is_active", true)
+      .eq("posted_by_role", tipe)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (kategori) {
+      latestPostQuery = latestPostQuery.eq("category", kategori);
+      latestUpdateQuery = latestUpdateQuery.eq("category", kategori);
+    }
+
+    const [{ data: latestPost }, { data: latestUpdate }] = await Promise.all([
+      latestPostQuery,
+      latestUpdateQuery
+    ]);
+
+    return {
+      latestPostId: latestPost?.[0]?.id ?? null,
+      latestPostAt: latestPost?.[0]?.created_at ?? null,
+      latestUpdateId: latestUpdate?.[0]?.id ?? null,
+      latestUpdateAt: latestUpdate?.[0]?.updated_at ?? null
+    };
+  },
+  ["home-jobs-marker"],
+  { revalidate: 20, tags: ["jobs-list"] }
+);
+
+
 // menit, alasan sama seperti getHomeJobs). Diambil sedikit lebih banyak lalu
 // di-dedup per akun (nama produk/jasa sama atau mirip -> hanya 1 yang tampil).
 // Pool hasil dinaikkan ke 100 (pagination.ts app/marketplace/page.tsx

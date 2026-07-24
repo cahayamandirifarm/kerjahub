@@ -1,26 +1,33 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminTxReviewButtons } from "@/components/AdminReviewButtons";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminEscrowPage() {
+export default async function AdminEscrowPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const { data: escrows } = await supabase
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
+
+  const { data: escrowsRaw } = await supabase
     .from("escrow_payments")
     .select("*, jobs(title), employer:profiles!escrow_payments_employer_id_fkey(full_name)")
     .eq("status", "menunggu_konfirmasi_admin")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .range(from, to);
+  const { pageRows: escrows, hasNext } = splitPage(escrowsRaw, ADMIN_PAGE_SIZE);
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold mb-6">Konfirmasi Pembayaran Escrow</h1>
       <div className="space-y-3">
-        {(!escrows || escrows.length === 0) && (
+        {escrows.length === 0 && (
           <div className="card p-6 text-center text-ink/50 text-sm">Tidak ada pembayaran escrow yang menunggu.</div>
         )}
-        {escrows?.map((e: any) => (
+        {escrows.map((e: any) => (
           <div key={e.id} className="card p-4 flex flex-col md:flex-row md:items-center gap-4 justify-between">
             <div>
               <p className="font-semibold">{e.employer?.full_name}</p>

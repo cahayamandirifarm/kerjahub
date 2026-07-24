@@ -1,12 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
-export default async function AdminAuditLogPage() {
+export default async function AdminAuditLogPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const { data: logs } = await supabase
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
+
+  const { data: logsRaw } = await supabase
     .from("audit_log")
     .select("*, profiles(full_name)")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
+  const { pageRows: logs, hasNext } = splitPage(logsRaw, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -22,7 +28,7 @@ export default async function AdminAuditLogPage() {
             </tr>
           </thead>
           <tbody>
-            {logs?.map((l: any) => (
+            {logs.map((l: any) => (
               <tr key={l.id} className="border-t border-line">
                 <td className="px-4 py-3 text-ink/50 whitespace-nowrap">
                   {new Date(l.created_at).toLocaleString("id-ID")}
@@ -36,7 +42,11 @@ export default async function AdminAuditLogPage() {
             ))}
           </tbody>
         </table>
+        {logs.length === 0 && (
+          <div className="p-6 text-center text-ink/50 text-sm">Belum ada aktivitas.</div>
+        )}
       </div>
+      <Pagination basePath="/admin/audit-log" params={{}} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }

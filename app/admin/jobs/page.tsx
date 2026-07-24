@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import StatusBadge from "@/components/StatusStepper";
 import JobStatusButtons from "./JobStatusButtons";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminJobsPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function AdminJobsPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
   const supabase = createClient();
   const q = searchParams?.q?.trim() || "";
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
 
   let employerIds: string[] = [];
   if (q) {
@@ -24,13 +28,14 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
     .select("*, profiles!jobs_employer_id_fkey(full_name)")
     .neq("stage", "selesai")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(from, to);
 
   if (q) {
     query = query.in("employer_id", employerIds.length ? employerIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const { data: jobs } = await query;
+  const { data: jobsRaw } = await query;
+  const { pageRows: jobs, hasNext } = splitPage(jobsRaw, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -67,7 +72,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
             </tr>
           </thead>
           <tbody>
-            {jobs?.map((j: any) => (
+            {jobs.map((j: any) => (
               <tr key={j.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium max-w-xs truncate">{j.title}</td>
                 <td className="px-4 py-3">{j.profiles?.full_name}</td>
@@ -101,12 +106,13 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
             ))}
           </tbody>
         </table>
-        {jobs?.length === 0 && (
+        {jobs.length === 0 && (
           <div className="p-6 text-center text-ink/50 text-sm">
             {q ? `Tidak ada postingan dari pengguna "${q}".` : "Belum ada postingan kerja."}
           </div>
         )}
       </div>
+      <Pagination basePath="/admin/jobs" params={{ q: q || undefined }} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }

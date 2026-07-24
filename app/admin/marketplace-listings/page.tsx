@@ -1,17 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import ListingStatusButtons from "./ListingStatusButtons";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminMarketplaceListingsPage() {
+export default async function AdminMarketplaceListingsPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const { data: listings } = await supabase
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
+
+  const { data: listingsRaw } = await supabase
     .from("digital_listings")
     .select("*, profiles!digital_listings_seller_id_fkey(full_name)")
     .neq("status", "dihapus")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  const { pageRows: listings, hasNext } = splitPage(listingsRaw, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -28,7 +35,7 @@ export default async function AdminMarketplaceListingsPage() {
             </tr>
           </thead>
           <tbody>
-            {listings?.map((l: any) => (
+            {listings.map((l: any) => (
               <tr key={l.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium max-w-xs truncate">{l.title}</td>
                 <td className="px-4 py-3">{l.profiles?.full_name}</td>
@@ -41,7 +48,11 @@ export default async function AdminMarketplaceListingsPage() {
             ))}
           </tbody>
         </table>
+        {listings.length === 0 && (
+          <div className="p-6 text-center text-ink/50 text-sm">Belum ada listing.</div>
+        )}
       </div>
+      <Pagination basePath="/admin/marketplace-listings" params={{}} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }

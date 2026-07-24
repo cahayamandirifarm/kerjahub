@@ -1,21 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
+import Pagination from "@/components/Pagination";
+import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
-export default async function AdminRatingsPage() {
+export default async function AdminRatingsPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const { data: ratings } = await supabase
+  const page = parsePage(searchParams?.page);
+  const { from, to } = adminRange(page);
+
+  const { data: ratingsRaw } = await supabase
     .from("ratings")
     .select("*, worker:profiles!ratings_worker_id_fkey(full_name), employer:profiles!ratings_employer_id_fkey(full_name), jobs(title)")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(from, to);
+  const { pageRows: ratings, hasNext } = splitPage(ratingsRaw, ADMIN_PAGE_SIZE);
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold mb-6">Rating & Ulasan</h1>
       <div className="space-y-3">
-        {(!ratings || ratings.length === 0) && (
+        {ratings.length === 0 && (
           <div className="card p-6 text-center text-ink/50 text-sm">Belum ada rating.</div>
         )}
-        {ratings?.map((r: any) => (
+        {ratings.map((r: any) => (
           <div key={r.id} className="card p-4">
             <div className="flex items-center justify-between">
               <p className="font-semibold">{r.worker?.full_name}</p>
@@ -31,6 +37,7 @@ export default async function AdminRatingsPage() {
           </div>
         ))}
       </div>
+      <Pagination basePath="/admin/ratings" params={{}} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }
