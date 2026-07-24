@@ -75,10 +75,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [user]);
 
   useEffect(() => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
+    // PENTING: sebelumnya baris ini setUnreadCount(0) begitu user logout --
+    // efek lain di bawah (yang sinkronkan badge ikon app dari unreadCount)
+    // ikut kepanggil dan MEMAKSA clearAppBadge(), padahal logout bukan
+    // berarti notifikasi yang belum dibaca jadi hilang/nol. Akibatnya buat
+    // pengguna yang sudah install PWA, badge di ikon app ikut hilang setiap
+    // kali logout, walau sebenarnya masih ada notifikasi yang belum dibaca.
+    // Sekarang saat logout cuma berhenti subscribe realtime & berhenti
+    // nge-refresh count -- angka unreadCount (dan badge ikon-nya) dibiarkan
+    // apa adanya sampai ada user login lagi (baru di-refresh ulang di bawah).
+    if (!user) return;
     loadUnread();
 
     const channel = supabase
