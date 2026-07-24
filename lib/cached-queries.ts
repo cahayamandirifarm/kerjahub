@@ -71,7 +71,16 @@ export const getHomeJobs = unstable_cache(
       .order("created_at", { ascending: false })
       .limit(40);
     if (kategori) query = query.eq("category", kategori);
-    const { data } = await query;
+    const { data, error } = await query;
+    // PENTING: jangan telan error di sini. Kalau query gagal (mis. env var
+    // Supabase belum ke-set saat deploy baru, RLS berubah, koneksi putus
+    // sesaat) dan kita cuma fallback ke `data ?? []`, unstable_cache akan
+    // menyimpan hasil KOSONG itu sebagai cache selama 1800 detik -- beranda
+    // jadi kelihatan "tidak ada postingan" padahal datanya ada, sampai cache
+    // itu kedaluwarsa sendiri. Dengan throw, unstable_cache tidak akan
+    // menyimpan hasil gagal ini, jadi request berikutnya akan coba query
+    // lagi (dan begitu berhasil, baru di-cache).
+    if (error) throw error;
     const ranked = sortByPopularity(data ?? []);
     const deduped = dedupeByOwnerAndTitle(ranked, (job) => job.employer_id);
     return deduped.slice(0, 30);
@@ -93,7 +102,10 @@ export const getMarketplaceListings = unstable_cache(
       .order("created_at", { ascending: false })
       .limit(55);
     if (kategori) query = query.eq("category", kategori);
-    const { data } = await query;
+    const { data, error } = await query;
+    // Sama seperti getHomeJobs -- jangan cache hasil kosong yang sebenarnya
+    // berasal dari error, bukan dari memang belum ada listing.
+    if (error) throw error;
     const ranked = sortByPopularity(data ?? []);
     const deduped = dedupeByOwnerAndTitle(ranked, (item) => item.seller_id);
     return deduped.slice(0, 40);

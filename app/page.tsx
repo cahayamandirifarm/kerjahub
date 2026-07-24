@@ -26,7 +26,12 @@ export default async function HomePage({
   searchParams: { kategori?: string; tipe?: string };
 }) {
   const tipe = searchParams.tipe === "jasa" ? "worker" : "employer";
-  const jobs = await getHomeJobs(tipe, searchParams.kategori);
+  // getHomeJobs sengaja throw kalau query ke Supabase gagal (supaya hasil
+  // gagal itu tidak ikut ke-cache 30 menit sebagai "kosong" -- lihat
+  // lib/cached-queries.ts). Di level halaman ini kita tangkap supaya
+  // kegagalan sesaat menampilkan state "belum ada postingan" yang aman,
+  // bukan meng-crash seluruh halaman beranda.
+  const jobs = await getHomeJobs(tipe, searchParams.kategori).catch(() => null);
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">

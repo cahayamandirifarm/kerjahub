@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { JOB_CATEGORIES } from "@/lib/types";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 type Role = "employer" | "worker";
 
@@ -162,6 +163,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         setError(c.failEdit);
         return;
       }
+      revalidateListings();
       router.push(c.redirect);
       router.refresh();
     } else {
@@ -177,6 +179,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         setError(c.failCreate);
         return;
       }
+      revalidateListings();
       router.push(c.redirect);
     }
   }

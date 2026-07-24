@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DIGITAL_CATEGORIES } from "@/lib/types";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 type InitialListing = {
   category: string;
@@ -115,6 +116,7 @@ export default function ListingForm({ listingId, initial }: Props) {
         setError("Gagal menyimpan perubahan.");
         return;
       }
+      revalidateListings();
       router.push(`/marketplace/${listingId}`);
       router.refresh();
     } else {
@@ -124,6 +126,7 @@ export default function ListingForm({ listingId, initial }: Props) {
         setError("Gagal memposting produk.");
         return;
       }
+      revalidateListings();
       router.push("/marketplace");
     }
   }

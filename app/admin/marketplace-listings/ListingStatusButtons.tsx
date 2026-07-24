@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export default function ListingStatusButtons({ listingId, status }: { listingId: string; status: string }) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function ListingStatusButtons({ listingId, status }: { listingId:
     setLoading(true);
     await supabase.from("digital_listings").update({ status: newStatus }).eq("id", listingId);
     setLoading(false);
+    revalidateListings();
     router.refresh();
   }
 

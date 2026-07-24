@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export default function AcceptButton({ applicationId }: { applicationId: string }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function AcceptButton({ applicationId }: { applicationId: string 
       alert(error.message);
       return;
     }
+    revalidateListings();
 
     const row = Array.isArray(data) ? data[0] : data;
     const escrowId: string | undefined = row?.escrow_id;

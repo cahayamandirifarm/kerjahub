@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil, Trash2, EyeOff, Eye } from "lucide-react";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export default function ListingPostingActions({
   listingId,
@@ -30,6 +31,7 @@ export default function ListingPostingActions({
       setError("Gagal mengubah status.");
       return;
     }
+    revalidateListings();
     router.refresh();
   }
 
@@ -45,6 +47,7 @@ export default function ListingPostingActions({
       setError("Tidak bisa dihapus permanen karena produk ini sudah punya riwayat transaksi. Coba nonaktifkan saja.");
       return;
     }
+    revalidateListings();
     router.refresh();
   }
 

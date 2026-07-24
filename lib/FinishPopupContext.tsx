@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export interface PendingFinish {
   job_id: string;
@@ -74,6 +75,7 @@ export function FinishPopupProvider({ children }: { children: React.ReactNode })
     const { data, error } = await supabase.rpc("keep_job_posting", { p_job_id: popup.job_id });
     setProcessing(false);
     if (error) return { error: error.message };
+    revalidateListings();
     await refresh();
     return { newJobId: (data as string) || undefined };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,6 +87,7 @@ export function FinishPopupProvider({ children }: { children: React.ReactNode })
     const { error } = await supabase.rpc("remove_job_posting", { p_job_id: popup.job_id });
     setProcessing(false);
     if (error) return { error: error.message };
+    revalidateListings();
     await refresh();
     return {};
     // eslint-disable-next-line react-hooks/exhaustive-deps

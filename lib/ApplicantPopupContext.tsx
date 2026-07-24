@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export interface PendingApplicant {
   application_id: string;
@@ -94,6 +95,7 @@ export function ApplicantPopupProvider({ children }: { children: React.ReactNode
     const { data, error } = await supabase.rpc("accept_applicant", { p_application_id: popup.application_id });
     setProcessing(false);
     if (error) return { error: error.message };
+    revalidateListings();
     await refresh();
     const row = Array.isArray(data) ? data[0] : data;
     return { escrowId: row?.escrow_id as string | undefined, payerId: row?.payer_id as string | undefined };

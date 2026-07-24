@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export interface ActiveJob {
   job_id: string;
@@ -66,6 +67,7 @@ export function ActiveJobLockProvider({ children }: { children: React.ReactNode 
     const { error } = await supabase.rpc("cancel_pending_payment", { p_job_id: activeJob.job_id });
     setCancelling(false);
     if (error) return { error: error.message };
+    revalidateListings();
     await refresh();
     return {};
     // eslint-disable-next-line react-hooks/exhaustive-deps

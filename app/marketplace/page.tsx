@@ -15,7 +15,10 @@ function formatRupiah(n: number) {
 export const revalidate = 900;
 
 export default async function MarketplacePage({ searchParams }: { searchParams: { kategori?: string } }) {
-  const listings = await getMarketplaceListings(searchParams.kategori);
+  // getMarketplaceListings sengaja throw kalau query gagal (lihat
+  // lib/cached-queries.ts) -- ditangkap di sini supaya kegagalan sesaat
+  // tidak meng-crash seluruh halaman marketplace.
+  const listings = await getMarketplaceListings(searchParams.kategori).catch(() => null);
 
   return (
     <div className="min-h-screen pb-24">

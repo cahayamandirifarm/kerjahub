@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export default function JobStatusButtons({ jobId, isActive }: { jobId: string; isActive: boolean }) {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function JobStatusButtons({ jobId, isActive }: { jobId: string; i
     setLoading(true);
     await supabase.from("jobs").update({ is_active: !isActive }).eq("id", jobId);
     setLoading(false);
+    revalidateListings();
     router.refresh();
   }
 
@@ -20,6 +22,7 @@ export default function JobStatusButtons({ jobId, isActive }: { jobId: string; i
     setLoading(true);
     await supabase.from("jobs").delete().eq("id", jobId);
     setLoading(false);
+    revalidateListings();
     router.refresh();
   }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil, Trash2, EyeOff, Eye } from "lucide-react";
+import { revalidateListings } from "@/lib/revalidate-listings";
 
 export default function JobPostingActions({
   jobId,
@@ -34,6 +35,7 @@ export default function JobPostingActions({
       setError("Gagal mengubah status.");
       return;
     }
+    revalidateListings();
     router.refresh();
   }
 
@@ -55,6 +57,7 @@ export default function JobPostingActions({
         setError(rpcError.message);
         return;
       }
+      revalidateListings();
       router.refresh();
       return;
     }
@@ -65,6 +68,7 @@ export default function JobPostingActions({
       setError("Tidak bisa dihapus permanen karena sudah ada riwayat transaksi/pelamar. Coba nonaktifkan saja.");
       return;
     }
+    revalidateListings();
     router.refresh();
   }
 
