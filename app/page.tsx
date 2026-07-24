@@ -40,7 +40,11 @@ export default async function HomePage({
 }: {
   searchParams: { kategori?: string; tipe?: string };
 }) {
-  const tipe = searchParams.tipe === "jasa" ? "worker" : "employer";
+  // Default saat pertama kali buka halaman (tanpa parameter ?tipe= di URL)
+  // sekarang "Saya Butuh Pekerjaan (Penerima Upah)" -- baru pindah ke
+  // "Saya Butuh Pekerja (Pemberi Upah)" kalau usernya klik tombol itu
+  // (?tipe=kerja).
+  const tipe = searchParams.tipe === "kerja" ? "employer" : "worker";
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">
