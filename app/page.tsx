@@ -18,16 +18,18 @@ import { categoryPostCopy } from "@/lib/category-copy";
 // data yang sudah basi (postingan yang baru dihapus/nonaktif tampak masih
 // ada sampai cache kedaluwarsa). Supaya beranda selalu ringan dan tidak
 // pernah menampilkan postingan yang sudah dihapus/nonaktif, beranda
-// sekarang HANYA berisi:
-//   1) Bagian "Lowongan & Pekerja Terdekat" (NearbyJobsSection) -- lihat
-//      juga perbaikan cache di komponen tsb (TTL diturunkan dari 7 hari
-//      jadi 15 menit, supaya postingan terhapus/nonaktif tidak nyangkut
-//      lama di cache device pengguna).
-//   2) Menu/grid kategori -- mengarahkan ke halaman /kategori yang
-//      MENGAMBIL DATA LANGSUNG (fresh, tidak di-cache lama) lewat RPC
-//      nearby_jobs/nearby_workers, yang sudah memfilter is_active=true &
-//      stage='terbuka' di sisi database, jadi postingan yang sudah
-//      dihapus/dinonaktifkan otomatis tidak pernah ikut tampil.
+// sekarang HANYA berisi (urutan tampil dari atas ke bawah):
+//   1) Toggle "Saya Butuh Pekerja (Pemberi Upah)" / "Saya Butuh Pekerjaan
+//      (Penerima Upah)" beserta menu/grid kategori di bawahnya --
+//      mengarahkan ke halaman /kategori yang MENGAMBIL DATA LANGSUNG
+//      (fresh, tidak di-cache lama) lewat RPC nearby_jobs/nearby_workers,
+//      yang sudah memfilter is_active=true & stage='terbuka' di sisi
+//      database, jadi postingan yang sudah dihapus/dinonaktifkan otomatis
+//      tidak pernah ikut tampil.
+//   2) Bagian "Lowongan & Pekerja Terdekat" (NearbyJobsSection) di
+//      bawahnya -- lihat juga perbaikan cache di komponen tsb (TTL
+//      diturunkan dari 7 hari jadi 15 menit, supaya postingan
+//      terhapus/nonaktif tidak nyangkut lama di cache device pengguna).
 // Daftar kartu postingan + paginasi + guest-gate yang tadinya ada di sini
 // dihapus dari beranda (bukan dihapus dari aplikasi -- pencarian per
 // kategori tetap ada di /kategori).
@@ -70,20 +72,9 @@ export default async function HomePage({
         </div>
       </section>
 
-      <NearbyJobsSection />
-
       <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>
         <div className="flex items-center gap-2 mb-3">
-          <Link
-            href={`/?tipe=kerja${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
-            scroll={false}
-            className={`rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
-              tipe === "employer" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
-            }`}
-          >
-            Saya Butuh Pekerja (Pemberi Upah)
-          </Link>
           <Link
             href={`/?tipe=jasa${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
             scroll={false}
@@ -93,10 +84,19 @@ export default async function HomePage({
           >
             Saya Butuh Pekerjaan (Penerima Upah)
           </Link>
+          <Link
+            href={`/?tipe=kerja${searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""}`}
+            scroll={false}
+            className={`rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
+              tipe === "employer" ? "bg-brand text-white border-transparent shadow-soft" : "bg-white text-ink/70 border-line"
+            }`}
+          >
+            Saya Butuh Pekerja (Pemberi Upah)
+          </Link>
         </div>
 
         <h3 className="font-display text-sm font-semibold text-ink/70 mb-3">Semua Kategori</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
           {JOB_CATEGORIES.map((c) => {
             const copy = categoryPostCopy(c, tipe === "worker" ? "jasa" : "kerja");
             return (
@@ -114,6 +114,8 @@ export default async function HomePage({
           })}
         </div>
       </section>
+
+      <NearbyJobsSection />
 
       <BottomNav />
       <LocationPrompt />
