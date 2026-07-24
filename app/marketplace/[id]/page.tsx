@@ -41,11 +41,16 @@ export default async function DigitalListingPage({ params }: { params: { id: str
         </span>
         <h1 className="font-display text-2xl font-semibold mt-1">{listing.title}</h1>
         <p className="font-display text-3xl font-semibold text-gold-dark mt-2">{formatRupiah(listing.price)}</p>
-        {!!listing.view_count && (
-          <p className="text-xs text-ink/45 mt-1 inline-flex items-center gap-1">
-            <Eye size={13} /> {listing.view_count}x dilihat
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          {!!listing.view_count && (
+            <p className="text-xs text-ink/45 inline-flex items-center gap-1">
+              <Eye size={13} /> {listing.view_count}x dilihat
+            </p>
+          )}
+          <p className={`text-xs font-semibold ${listing.stock > 0 ? "text-ink/50" : "text-clay"}`}>
+            {listing.stock > 0 ? `Stok tersisa: ${listing.stock}` : "Stok habis"}
           </p>
-        )}
+        </div>
 
         <div className="card p-5 mt-4">
           <h2 className="font-display text-lg font-semibold mb-2">Deskripsi</h2>
@@ -79,7 +84,7 @@ export default async function DigitalListingPage({ params }: { params: { id: str
 
         <div className="mt-6 space-y-3">
           <ChatInquiryButton kind="listing" refId={listing.id} ownerId={listing.seller_id} />
-          <BuyButton listingId={listing.id} status={listing.status} ownerId={listing.seller_id} />
+          <BuyButton listingId={listing.id} status={listing.status} stock={listing.stock} ownerId={listing.seller_id} />
         </div>
       </div>
     </div>

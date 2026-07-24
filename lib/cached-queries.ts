@@ -114,6 +114,26 @@ export const getMarketplaceListings = unstable_cache(
   { revalidate: 1800, tags: ["marketplace-list"] }
 );
 
+// Pencarian listing marketplace berdasarkan judul -- SENGAJA tidak di-cache
+// lewat unstable_cache (beda dari getMarketplaceListings di atas) karena
+// kata kunci pencarian jumlahnya sangat bervariasi, jadi tidak efektif
+// untuk di-cache per kombinasi kata kunci. Dipanggil langsung dari halaman
+// /marketplace ketika user mengisi kotak pencarian.
+export async function searchMarketplaceListings(q: string, kategori?: string) {
+  const supabase = createPublicClient();
+  let query = supabase
+    .from("digital_listings")
+    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
+    .eq("status", "aktif")
+    .ilike("title", `%${q.trim()}%`)
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (kategori) query = query.eq("category", kategori);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
 // Banner promosi aktif -- cache 24 jam.
 export const getActiveBanners = unstable_cache(
   async () => {

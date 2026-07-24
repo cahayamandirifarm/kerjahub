@@ -4,7 +4,17 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SelfActionBlockedModal from "@/components/SelfActionBlockedModal";
 
-export default function BuyButton({ listingId, status, ownerId }: { listingId: string; status: string; ownerId: string }) {
+export default function BuyButton({
+  listingId,
+  status,
+  stock,
+  ownerId
+}: {
+  listingId: string;
+  status: string;
+  stock: number;
+  ownerId: string;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -41,8 +51,8 @@ export default function BuyButton({ listingId, status, ownerId }: { listingId: s
     router.push(`/dashboard/marketplace/order/${data.id}`);
   }
 
-  if (status !== "aktif") {
-    return <div className="card p-4 text-center text-sm text-ink/50">Produk ini sudah tidak tersedia.</div>;
+  if (status !== "aktif" || stock <= 0) {
+    return <div className="card p-4 text-center text-sm text-ink/50">Stok produk ini sudah habis.</div>;
   }
 
   return (

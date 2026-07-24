@@ -10,6 +10,7 @@ type InitialListing = {
   title: string;
   description: string;
   price: number;
+  stock: number;
   cover_image: string;
   gallery_images: string[];
 };
@@ -27,7 +28,8 @@ export default function ListingForm({ listingId, initial }: Props) {
     category: initial?.category ?? DIGITAL_CATEGORIES[0].value,
     title: initial?.title ?? "",
     description: initial?.description ?? "",
-    price: initial ? String(initial.price) : ""
+    price: initial ? String(initial.price) : "",
+    stock: initial ? String(initial.stock) : "1"
   });
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +71,11 @@ export default function ListingForm({ listingId, initial }: Props) {
       setError("Ada foto yang melebihi batas ukuran 1MB. Silakan pilih ulang foto produk.");
       return;
     }
+    const stockValue = Number(form.stock);
+    if (!Number.isInteger(stockValue) || stockValue < 1) {
+      setError("Stok produk minimal 1.");
+      return;
+    }
 
     setLoading(true);
     const {
@@ -105,6 +112,7 @@ export default function ListingForm({ listingId, initial }: Props) {
       title: form.title,
       description: form.description,
       price: Number(form.price),
+      stock: stockValue,
       cover_image: coverImage,
       gallery_images: galleryImages
     };
@@ -180,6 +188,22 @@ export default function ListingForm({ listingId, initial }: Props) {
               value={form.price}
               onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
             />
+          </div>
+          <div>
+            <label className="label">Stok Produk</label>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              step={1}
+              required
+              placeholder="Contoh: 10"
+              value={form.stock}
+              onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+            />
+            <p className="text-xs text-ink/50 mt-1">
+              Jumlah unit produk yang tersedia untuk dijual. Berkurang otomatis setiap ada penjualan.
+            </p>
           </div>
           <div>
             <label className="label">Foto Produk (1-5 foto, maks 1MB/foto)</label>

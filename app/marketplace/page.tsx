@@ -2,8 +2,8 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { DIGITAL_CATEGORIES, DigitalListing } from "@/lib/types";
 import Link from "next/link";
-import { Plus, ShoppingBag, Star, CheckCircle2, Eye } from "lucide-react";
-import { getMarketplaceListings } from "@/lib/cached-queries";
+import { Plus, ShoppingBag, Search, Star, CheckCircle2, Eye } from "lucide-react";
+import { getMarketplaceListings, searchMarketplaceListings } from "@/lib/cached-queries";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n).toLocaleString("id-ID");
@@ -14,11 +14,16 @@ function formatRupiah(n: number) {
 // cookies(), jadi bisa ikut di-cache (ISR) di Vercel per kombinasi kategori.
 export const revalidate = 900;
 
-export default async function MarketplacePage({ searchParams }: { searchParams: { kategori?: string } }) {
-  // getMarketplaceListings sengaja throw kalau query gagal (lihat
-  // lib/cached-queries.ts) -- ditangkap di sini supaya kegagalan sesaat
-  // tidak meng-crash seluruh halaman marketplace.
-  const listings = await getMarketplaceListings(searchParams.kategori).catch(() => null);
+export default async function MarketplacePage({ searchParams }: { searchParams: { kategori?: string; q?: string } }) {
+  const q = searchParams.q?.trim() || "";
+  // getMarketplaceListings/searchMarketplaceListings sengaja throw kalau
+  // query gagal (lihat lib/cached-queries.ts) -- ditangkap di sini supaya
+  // kegagalan sesaat tidak meng-crash seluruh halaman marketplace. Kalau
+  // ada kata kunci pencarian (q), pakai query langsung (tidak di-cache)
+  // supaya hasil pencarian selalu akurat.
+  const listings = q
+    ? await searchMarketplaceListings(q, searchParams.kategori).catch(() => null)
+    : await getMarketplaceListings(searchParams.kategori).catch(() => null);
 
   return (
     <div className="min-h-screen pb-24">
@@ -31,11 +36,23 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
           </Link>
         </div>
         <p className="text-sm text-ink/55 mb-2">Jual beli akun &amp; produk digital dengan dana ditahan aman platform.</p>
-        <span className="badge-escrow mb-6 inline-flex">🔒 Escrow Protection aktif di setiap transaksi</span>
+        <span className="badge-escrow mb-4 inline-flex">🔒 Escrow Protection aktif di setiap transaksi</span>
+
+        <form action="/marketplace" method="get" className="relative mb-4">
+          {searchParams.kategori && <input type="hidden" name="kategori" value={searchParams.kategori} />}
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Cari produk atau akun digital..."
+            className="input !pl-10"
+          />
+        </form>
 
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4">
           <a
-            href="/marketplace"
+            href={q ? `/marketplace?q=${encodeURIComponent(q)}` : "/marketplace"}
             className={`shrink-0 rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
               !searchParams.kategori ? "bg-ink text-white border-transparent" : "bg-white text-ink/70 border-line"
             }`}
@@ -45,7 +62,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
           {DIGITAL_CATEGORIES.map((c) => (
             <a
               key={c.value}
-              href={`/marketplace?kategori=${c.value}`}
+              href={`/marketplace?kategori=${c.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               className={`shrink-0 rounded-pill px-4 py-2 text-sm font-semibold border transition-colors ${
                 searchParams.kategori === c.value ? "bg-ink text-white border-transparent" : "bg-white text-ink/70 border-line"
               }`}
@@ -58,7 +75,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
         {(!listings || listings.length === 0) && (
           <div className="card p-8 text-center text-ink/50">
             <ShoppingBag className="mx-auto mb-3" />
-            Belum ada produk di kategori ini.
+            {q ? `Tidak ada produk yang cocok dengan "${q}".` : "Belum ada produk di kategori ini."}
           </div>
         )}
 
@@ -75,8 +92,8 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
               >
                 <div className="relative">
                   <img src={item.cover_image} alt={item.title} loading="lazy" decoding="async" className="w-full aspect-square object-cover" />
-                  {item.status === "terjual" && (
-                    <span className="badge-sold absolute top-2 left-2 bg-white/90">Terjual</span>
+                  {(item.status === "terjual" || item.stock <= 0) && (
+                    <span className="badge-sold absolute top-2 left-2 bg-white/90">Stok Habis</span>
                   )}
                   {isPopular && (
                     <span className="absolute top-2 right-2 text-[10px] font-bold text-turquoise-dark bg-white/90 rounded-pill px-1.5 py-0.5">
@@ -97,6 +114,9 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
                   </div>
                   <h3 className="font-semibold text-sm text-ink line-clamp-2 mt-0.5">{item.title}</h3>
                   <p className="font-display text-base font-bold text-ink mt-1.5">{formatRupiah(item.price)}</p>
+                  {item.status !== "terjual" && item.stock > 0 && item.stock <= 5 && (
+                    <p className="text-[11px] font-semibold text-clay mt-0.5">Sisa stok: {item.stock}</p>
+                  )}
                   {seller && (
                     <div className="mt-1.5 flex items-center gap-2 text-[11px] text-ink/50 flex-wrap">
                       <span className="inline-flex items-center gap-0.5">

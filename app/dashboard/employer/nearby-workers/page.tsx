@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistance } from "@/lib/geo-helpers";
-import { MapPin, Star, CheckCircle2 } from "lucide-react";
+import { MapPin, Star, CheckCircle2, Search } from "lucide-react";
 
 interface NearbyWorker {
   id: string;
@@ -21,6 +21,13 @@ export default function NearbyWorkersPage() {
   const supabase = createClient();
   const [workers, setWorkers] = useState<NearbyWorker[] | null>(null);
   const [status, setStatus] = useState<"loading" | "no-permission" | "ready" | "disabled">("loading");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     (async () => {
@@ -38,7 +45,8 @@ export default function NearbyWorkersPage() {
           const { data } = await supabase.rpc("nearby_workers", {
             p_lat: pos.coords.latitude,
             p_lng: pos.coords.longitude,
-            p_limit: 30
+            p_limit: 30,
+            p_search: search || null
           });
           setWorkers(data || []);
           setStatus("ready");
@@ -48,12 +56,23 @@ export default function NearbyWorkersPage() {
       );
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [search]);
 
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="font-display text-2xl font-semibold mb-1">Pekerja Terdekat</h1>
       <p className="text-sm text-ink/60 mb-6">Ditemukan berdasarkan jarak, rating, dan jumlah pekerjaan selesai.</p>
+
+      <div className="relative mb-5">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Cari nama pekerja, jasa, atau skill..."
+          className="input !pl-10"
+        />
+      </div>
 
       {status === "loading" && <div className="card p-6 text-center text-ink/50 text-sm">Mencari lokasi...</div>}
       {status === "disabled" && (
@@ -65,7 +84,9 @@ export default function NearbyWorkersPage() {
         </div>
       )}
       {status === "ready" && (!workers || workers.length === 0) && (
-        <div className="card p-6 text-center text-ink/50 text-sm">Belum ada pekerja dalam radius pencarian.</div>
+        <div className="card p-6 text-center text-ink/50 text-sm">
+          {search ? `Tidak ada hasil untuk "${search}".` : "Belum ada pekerja dalam radius pencarian."}
+        </div>
       )}
 
       <div className="space-y-3">

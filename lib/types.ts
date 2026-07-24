@@ -131,6 +131,7 @@ export interface DigitalListing {
   cover_image: string;
   gallery_images: string[];
   status: "aktif" | "nonaktif" | "terjual" | "dihapus";
+  stock: number;
   view_count?: number;
   created_at: string;
   // Diisi lewat join ke profiles saat query marketplace/detail -- dipakai

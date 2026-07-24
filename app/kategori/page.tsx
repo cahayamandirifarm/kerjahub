@@ -7,7 +7,7 @@ import { formatDistance } from "@/lib/geo-helpers";
 import { categoryPostCopy } from "@/lib/category-copy";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
-import { MapPin, MapPinOff, Star, CheckCircle2, Loader2 } from "lucide-react";
+import { MapPin, MapPinOff, Star, CheckCircle2, Loader2, Search } from "lucide-react";
 
 interface NearbyJobRow {
   id: string;
@@ -56,6 +56,13 @@ function KategoriContent() {
   const [unit, setUnit] = useState<"meter" | "km">("km");
   const [jobs, setJobs] = useState<NearbyJobRow[] | null>(null);
   const [workers, setWorkers] = useState<NearbyWorkerRow[] | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const copy = categoryPostCopy(kategori, tipe);
   const postLink =
@@ -81,7 +88,8 @@ function KategoriContent() {
               p_lat: pos.coords.latitude,
               p_lng: pos.coords.longitude,
               p_limit: 100,
-              p_category: kategori
+              p_category: kategori,
+              p_search: search || null
             });
             setJobs((data as NearbyJobRow[]) || []);
           } else {
@@ -89,7 +97,8 @@ function KategoriContent() {
               p_lat: pos.coords.latitude,
               p_lng: pos.coords.longitude,
               p_limit: 100,
-              p_category: kategori
+              p_category: kategori,
+              p_search: search || null
             });
             setWorkers((data as NearbyWorkerRow[]) || []);
           }
@@ -100,11 +109,12 @@ function KategoriContent() {
       );
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipe, kategori]);
+  }, [tipe, kategori, search]);
 
   const isLoading = locationStatus === "checking";
   const hasResults = tipe === "kerja" ? (jobs && jobs.length > 0) : (workers && workers.length > 0);
-  const noResultsInRadius = locationStatus === "ok" && !hasResults;
+  const noResultsInRadius = locationStatus === "ok" && !hasResults && !search;
+  const noSearchResults = locationStatus === "ok" && !hasResults && !!search;
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">
@@ -119,6 +129,17 @@ function KategoriContent() {
       </section>
 
       <section className="max-w-5xl mx-auto px-4">
+        <div className="relative mb-5">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={tipe === "kerja" ? "Cari judul lowongan..." : "Cari jasa atau nama pekerja..."}
+            className="input !pl-10"
+          />
+        </div>
+
         {isLoading && (
           <div className="card p-10 text-center text-ink/50">
             <Loader2 className="mx-auto mb-3 animate-spin" />
@@ -198,6 +219,13 @@ function KategoriContent() {
                 </div>
               </Link>
             ))}
+          </div>
+        )}
+
+        {noSearchResults && (
+          <div className="card p-8 text-center text-ink/50">
+            <Search className="mx-auto mb-3" />
+            Tidak ada hasil untuk "{search}" di kategori ini.
           </div>
         )}
       </section>

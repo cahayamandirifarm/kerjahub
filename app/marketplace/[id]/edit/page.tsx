@@ -32,6 +32,7 @@ export default async function EditListingPage({ params }: { params: { id: string
         title: listing.title,
         description: listing.description,
         price: listing.price,
+        stock: listing.stock,
         cover_image: listing.cover_image,
         gallery_images: listing.gallery_images || []
       }}
