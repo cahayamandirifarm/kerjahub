@@ -3,9 +3,12 @@ import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import MarkNotificationsRead from "@/components/MarkNotificationsRead";
-import Link from "next/link";
-import { Bell } from "lucide-react";
+import NotificationsList from "@/components/NotificationsList";
 
+// Sejak migration 0057, notifikasi tidak lagi disimpan permanen di
+// database -- riwayatnya cuma ada di cache lokal (IndexedDB) tiap
+// perangkat, jadi halaman ini tidak lagi query tabel `notifications` di
+// server. Cek login tetap dilakukan di server seperti sebelumnya.
 export default async function NotificationsPage() {
   const supabase = createClient();
   const {
@@ -13,37 +16,13 @@ export default async function NotificationsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/notifications");
 
-  const { data: notifications } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("profile_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
   return (
     <div className="min-h-screen pb-24">
       <MarkNotificationsRead />
       <Navbar />
       <div className="max-w-lg mx-auto px-4 py-8">
         <h1 className="font-display text-2xl font-semibold mb-6">Notifikasi</h1>
-        <div className="space-y-2">
-          {(!notifications || notifications.length === 0) && (
-            <div className="card p-8 text-center text-ink/50 text-sm">
-              <Bell className="mx-auto mb-2" /> Belum ada notifikasi.
-            </div>
-          )}
-          {notifications?.map((n) => (
-            <Link
-              key={n.id}
-              href={n.link || "#"}
-              className={`card p-4 block ${!n.is_read ? "border-turquoise/40 bg-turquoise-light/40" : ""}`}
-            >
-              <p className="font-semibold text-ink">{n.title}</p>
-              {n.body && <p className="text-sm text-ink/60 mt-0.5">{n.body}</p>}
-              <p className="text-xs text-ink/40 mt-1">{new Date(n.created_at).toLocaleString("id-ID")}</p>
-            </Link>
-          ))}
-        </div>
+        <NotificationsList />
       </div>
       <BottomNav />
     </div>

@@ -12,18 +12,29 @@ import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 import { categoryPostCopy } from "@/lib/category-copy";
 import { getHomeJobs } from "@/lib/cached-queries";
+import Pagination from "@/components/Pagination";
+import GuestPageGate from "@/components/GuestPageGate";
+
+// Berapa postingan yang ditampilkan per halaman -- sama untuk semua orang.
+// Tamu (belum login) HANYA boleh membuka halaman 1 (lihat pengecekan
+// isGuestBlocked di bawah); untuk lanjut ke halaman berikutnya wajib
+// login/daftar dulu.
+const PAGE_SIZE = 10;
 
 // Daftar pekerjaan di beranda tidak lagi query Supabase langsung di setiap
 // kunjungan -- diambil lewat getHomeJobs (Next.js Data Cache, cache 15
-// menit). Karena halaman ini tidak lagi memanggil cookies() sama sekali,
-// Next.js/Vercel bisa menyajikan halaman ini dari cache (ISR) ke banyak
-// pengunjung sekaligus, bukan render ulang + query DB di tiap request.
+// menit). Halaman 1 tidak memanggil cookies() sama sekali, jadi
+// Next.js/Vercel masih bisa menyajikannya dari cache (ISR) ke banyak
+// pengunjung sekaligus. Cookies (lewat createClient di lib/supabase/server)
+// HANYA dipanggil kalau ada yang minta halaman ke-2 dst, khusus untuk cek
+// status login guest -- request itu jadi dynamic per-request, tapi
+// halaman 1 (yang paling sering dikunjungi) tetap dapat manfaat ISR.
 export const revalidate = 900;
 
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: { kategori?: string; tipe?: string };
+  searchParams: { kategori?: string; tipe?: string; page?: string };
 }) {
   const tipe = searchParams.tipe === "jasa" ? "worker" : "employer";
   // getHomeJobs sengaja throw kalau query ke Supabase gagal (supaya hasil
@@ -32,6 +43,30 @@ export default async function HomePage({
   // kegagalan sesaat menampilkan state "belum ada postingan" yang aman,
   // bukan meng-crash seluruh halaman beranda.
   const jobs = await getHomeJobs(tipe, searchParams.kategori).catch(() => null);
+
+  const pageParam = Number(searchParams.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+
+  // Batasan tamu: halaman ke-2 dst dari feed publik ini wajib login.
+  // Cek ini SENGAJA hanya dilakukan kalau page > 1, supaya halaman 1 (yang
+  // paling banyak dikunjungi) tidak ikut memanggil cookies()/auth dan tetap
+  // bisa di-ISR-cache seperti sebelumnya.
+  let isGuestBlocked = false;
+  if (page > 1) {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = createClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) isGuestBlocked = true;
+  }
+
+  const allJobs = (jobs as Job[] | null) ?? [];
+  const pageJobs = allJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const hasNext = allJobs.length > page * PAGE_SIZE;
+  const nextPath = `/?tipe=${searchParams.tipe === "jasa" ? "jasa" : "kerja"}${
+    searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""
+  }&page=${page}`;
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">
@@ -107,18 +142,31 @@ export default async function HomePage({
           })}
         </div>
 
-        {(!jobs || jobs.length === 0) && (
-          <div className="card p-8 text-center text-ink/50">
-            <Search className="mx-auto mb-3" />
-            {tipe === "worker" ? "Belum ada pekerja yang menawarkan jasa di kategori ini." : "Belum ada penawaran kerja untuk kategori ini."}
-          </div>
-        )}
+        {isGuestBlocked ? (
+          <GuestPageGate next={nextPath} />
+        ) : (
+          <>
+            {pageJobs.length === 0 && (
+              <div className="card p-8 text-center text-ink/50">
+                <Search className="mx-auto mb-3" />
+                {tipe === "worker" ? "Belum ada pekerja yang menawarkan jasa di kategori ini." : "Belum ada penawaran kerja untuk kategori ini."}
+              </div>
+            )}
 
-        <div className="grid sm:grid-cols-2 gap-4 mb-10">
-          {(jobs as Job[] | null)?.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
+            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+              {pageJobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
+
+            <Pagination
+              basePath="/"
+              params={{ tipe: searchParams.tipe, kategori: searchParams.kategori }}
+              currentPage={page}
+              hasNext={hasNext}
+            />
+          </>
+        )}
       </section>
 
       <BottomNav />

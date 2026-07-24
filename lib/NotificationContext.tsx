@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import { getActiveConversationId } from "@/lib/push";
+import { cacheAddNotification, cacheGetUnreadCount, cacheMarkAllRead } from "@/lib/notifCache";
 import Link from "next/link";
 import { X, Bell, CheckCircle2, Wallet, MessageCircle, ShieldCheck, Briefcase, HandCoins, Megaphone } from "lucide-react";
 
@@ -66,12 +67,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const loadUnread = useCallback(async () => {
     if (!user) return;
-    const { count } = await supabase
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
-      .eq("profile_id", user.id)
-      .eq("is_read", false);
-    setUnreadCount(count || 0);
+    // Baris di tabel `notifications` dihapus permanen begitu terkirim
+    // (migration 0057) -- riwayat & status belum-dibaca sekarang hidup di
+    // cache lokal perangkat ini (IndexedDB), bukan di database lagi.
+    const count = await cacheGetUnreadCount(user.id);
+    setUnreadCount(count);
   }, [user]);
 
   useEffect(() => {
@@ -94,6 +94,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         { event: "INSERT", schema: "public", table: "notifications", filter: `profile_id=eq.${user.id}` },
         (payload) => {
           const row = payload.new as NotifRow;
+          // Baris ini akan dihapus permanen dari DB sesaat lagi (migration
+          // 0057, trg_zz_purge_notification) -- simpan dulu ke cache lokal
+          // (IndexedDB) selagi masih sempat terlihat lewat event Realtime
+          // ini, supaya riwayatnya tidak ikut hilang di perangkat ini.
+          cacheAddNotification({ ...row, profile_id: user.id });
           // Kalau notifikasi chat ini untuk percakapan yang SEDANG dibuka
           // pengguna, jangan toast+bunyi lagi — pesan sudah muncul langsung
           // di bubble chat-nya lewat realtime, jadi bakal dobel.
@@ -137,7 +142,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   async function markAllRead() {
     if (!user) return;
-    await supabase.from("notifications").update({ is_read: true }).eq("profile_id", user.id).eq("is_read", false);
+    // Baris di DB sudah dihapus (migration 0057) begitu notifikasi
+    // terkirim -- yang perlu ditandai "sudah dibaca" adalah salinannya di
+    // cache lokal (IndexedDB), sumber riwayat yang sekarang dipakai.
+    await cacheMarkAllRead(user.id);
     setUnreadCount(0);
   }
 

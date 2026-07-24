@@ -59,6 +59,12 @@ function sortByPopularity<T extends { view_count?: number; created_at: string; p
 // kecil). Ambil sedikit lebih banyak baris dari yang ditampilkan (limit 40)
 // karena setelah di-dedup per akun (judul sama/mirip disisakan 1) jumlahnya
 // bisa berkurang -- lalu dipotong ke 30 hasil akhir.
+// PENTING (pagination 10/halaman): fungsi ini mengembalikan SATU pool hasil
+// yang sudah diranking+dedup, lalu halaman (app/page.tsx) yang memotongnya
+// 10 per halaman lewat parameter ?page= -- bukan query per-halaman ke DB,
+// supaya urutan populer (rating/laris/dilihat/terbaru) & dedup akun tetap
+// konsisten lintas halaman. Limit pool dinaikkan jadi 150/100 (dari
+// 40/30) supaya cukup untuk beberapa halaman.
 export const getHomeJobs = unstable_cache(
   async (tipe: "employer" | "worker", kategori?: string) => {
     const supabase = createPublicClient();
@@ -69,7 +75,7 @@ export const getHomeJobs = unstable_cache(
       .eq("is_active", true)
       .eq("posted_by_role", tipe)
       .order("created_at", { ascending: false })
-      .limit(40);
+      .limit(150);
     if (kategori) query = query.eq("category", kategori);
     const { data, error } = await query;
     // PENTING: jangan telan error di sini. Kalau query gagal (mis. env var
@@ -83,7 +89,7 @@ export const getHomeJobs = unstable_cache(
     if (error) throw error;
     const ranked = sortByPopularity(data ?? []);
     const deduped = dedupeByOwnerAndTitle(ranked, (job) => job.employer_id);
-    return deduped.slice(0, 30);
+    return deduped.slice(0, 100);
   },
   ["home-jobs"],
   { revalidate: 1800, tags: ["jobs-list"] }
@@ -92,6 +98,8 @@ export const getHomeJobs = unstable_cache(
 // Listing marketplace digital aktif -- cache 30 menit (dinaikkan dari 15
 // menit, alasan sama seperti getHomeJobs). Diambil sedikit lebih banyak lalu
 // di-dedup per akun (nama produk/jasa sama atau mirip -> hanya 1 yang tampil).
+// Pool hasil dinaikkan ke 100 (pagination.ts app/marketplace/page.tsx
+// memotongnya 10 per halaman lewat ?page=).
 export const getMarketplaceListings = unstable_cache(
   async (kategori?: string) => {
     const supabase = createPublicClient();
@@ -100,7 +108,7 @@ export const getMarketplaceListings = unstable_cache(
       .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
       .eq("status", "aktif")
       .order("created_at", { ascending: false })
-      .limit(55);
+      .limit(150);
     if (kategori) query = query.eq("category", kategori);
     const { data, error } = await query;
     // Sama seperti getHomeJobs -- jangan cache hasil kosong yang sebenarnya
@@ -108,7 +116,7 @@ export const getMarketplaceListings = unstable_cache(
     if (error) throw error;
     const ranked = sortByPopularity(data ?? []);
     const deduped = dedupeByOwnerAndTitle(ranked, (item) => item.seller_id);
-    return deduped.slice(0, 40);
+    return deduped.slice(0, 100);
   },
   ["marketplace-listings"],
   { revalidate: 1800, tags: ["marketplace-list"] }
@@ -127,7 +135,7 @@ export async function searchMarketplaceListings(q: string, kategori?: string) {
     .eq("status", "aktif")
     .ilike("title", `%${q.trim()}%`)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(100);
   if (kategori) query = query.eq("category", kategori);
   const { data, error } = await query;
   if (error) throw error;

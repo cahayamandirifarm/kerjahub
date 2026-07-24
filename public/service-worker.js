@@ -89,6 +89,55 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// -------------------- Cache riwayat notifikasi (IndexedDB) --------------------
+// Sejak migration 0057, baris di tabel `notifications` dihapus permanen
+// begitu terkirim -- server tidak lagi menyimpan riwayat atau menghitung
+// angka badge. Skema di bawah HARUS SAMA PERSIS dengan lib/notifCache.ts
+// (dipakai saat app terbuka) supaya notifikasi yang masuk lewat push di
+// sini ikut muncul di halaman /notifications begitu app dibuka lagi, dan
+// angka badge yang dihitung tetap konsisten satu sama lain.
+const NOTIF_DB_NAME = "kerjahub-notif-cache";
+const NOTIF_DB_VERSION = 1;
+const NOTIF_STORE = "notifications";
+
+function notifOpenDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(NOTIF_DB_NAME, NOTIF_DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(NOTIF_STORE)) {
+        const store = db.createObjectStore(NOTIF_STORE, { keyPath: "id" });
+        store.createIndex("profile_id", "profile_id", { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function notifCacheAdd(row) {
+  const db = await notifOpenDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(NOTIF_STORE, "readwrite");
+    tx.objectStore(NOTIF_STORE).put(row);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+async function notifCacheUnreadCount(profileId) {
+  const db = await notifOpenDb();
+  const rows = await new Promise((resolve, reject) => {
+    const tx = db.transaction(NOTIF_STORE, "readonly");
+    const req = tx.objectStore(NOTIF_STORE).index("profile_id").getAll(profileId);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return rows.filter((r) => !r.is_read).length;
+}
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload;
@@ -100,26 +149,41 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
-      // Angka merah di ikon app (seperti WhatsApp) — server sudah menghitung
-      // total notifikasi belum dibaca milik penerima ini dan mengirimkannya
-      // lewat payload.badgeCount, supaya angkanya selalu akurat walau ada
-      // beberapa notifikasi menumpuk sebelum app dibuka lagi.
+      // Sejak migration 0057, tabel `notifications` tidak lagi menyimpan
+      // riwayat permanen di server, jadi server juga tidak bisa lagi
+      // menghitung "total notifikasi belum dibaca" untuk badge. Sebagai
+      // gantinya, notifikasi ini disimpan ke cache lokal (IndexedDB) di
+      // PERANGKAT INI, lalu angka badge dihitung dari cache tersebut --
+      // sama seperti riwayat yang ditampilkan halaman /notifications.
       //
       // PENTING: badge ini WAJIB selalu disinkronkan di sini, TIDAK BOLEH
       // ikut di-skip oleh pengecekan "isViewingThisChat" di bawah. Badge
       // mewakili total notifikasi belum dibaca di SELURUH app (termasuk
       // hasil nego harga, pembayaran, lamaran, dll), bukan cuma percakapan
-      // yang sedang dibuka — sebelumnya badge ini ikut ter-skip kalau
-      // activeConversationId di service worker masih "nyangkut" menunjuk ke
-      // percakapan tempat nego harga terakhir terjadi (mis. tab/app ditutup
-      // paksa sebelum sempat memberi tahu SW bahwa percakapan sudah
-      // ditinggalkan), sehingga badge notifikasi PWA berhenti muncul untuk
-      // percakapan itu seterusnya walau ada notifikasi baru.
-      if ("setAppBadge" in self.navigator && typeof payload.badgeCount === "number") {
-        if (payload.badgeCount > 0) {
-          self.navigator.setAppBadge(payload.badgeCount).catch(() => {});
-        } else {
-          self.navigator.clearAppBadge().catch(() => {});
+      // yang sedang dibuka.
+      if (payload.profile_id) {
+        try {
+          await notifCacheAdd({
+            id: payload.notification_id || `sw-${Date.now()}`,
+            profile_id: payload.profile_id,
+            title: payload.title || "Notifikasi baru",
+            body: payload.body || null,
+            link: payload.url || null,
+            category: payload.category || (payload.conversationId ? "chat" : "umum"),
+            is_read: false,
+            created_at: new Date().toISOString()
+          });
+          if ("setAppBadge" in self.navigator) {
+            const unread = await notifCacheUnreadCount(payload.profile_id);
+            if (unread > 0) {
+              self.navigator.setAppBadge(unread).catch(() => {});
+            } else {
+              self.navigator.clearAppBadge().catch(() => {});
+            }
+          }
+        } catch {
+          // gagal simpan ke cache/hitung badge tidak boleh menggagalkan
+          // tampilnya notifikasi push itu sendiri
         }
       }
 

@@ -45,18 +45,17 @@ function snippetFor(messageType: string, content: string) {
   return content?.slice(0, 120) || "Pesan baru";
 }
 
-// Hitung total notifikasi belum dibaca PER penerima, supaya angka badge
-// merah di ikon app (mirip WhatsApp) selalu akurat.
-async function badgeCountByProfile(profileIds: string[]) {
-  const { data } = await supabase.from("notifications").select("profile_id").in("profile_id", profileIds).eq("is_read", false);
-  const map = new Map<string, number>();
-  for (const row of data ?? []) map.set(row.profile_id, (map.get(row.profile_id) ?? 0) + 1);
-  return map;
-}
+// CATATAN (migration 0057): tabel `notifications` sekarang cuma perantara
+// sesaat -- baris dihapus permanen begitu proses ini selesai (lihat
+// trg_zz_purge_notification), jadi TIDAK BISA lagi dipakai untuk menghitung
+// "total notifikasi belum dibaca" di server. Angka badge di ikon app
+// sekarang sepenuhnya dihitung & disimpan LOKAL di tiap perangkat lewat
+// IndexedDB oleh public/service-worker.js saat menerima push ini -- fungsi
+// badgeCountByProfile yang dulu query tabel `notifications` sudah dihapus.
 
 // Kirim 1 payload push ke semua subscription milik daftar profile_id,
 // lalu bersihkan subscription yang sudah kedaluwarsa (404/410).
-async function sendPushToProfiles(profileIds: string[], buildPayload: (badgeCount: number) => object) {
+async function sendPushToProfiles(profileIds: string[], buildPayload: (profileId: string) => object) {
   const { data: subs } = await supabase
     .from("push_subscriptions")
     .select("id, profile_id, endpoint, p256dh, auth")
@@ -64,12 +63,11 @@ async function sendPushToProfiles(profileIds: string[], buildPayload: (badgeCoun
 
   if (!subs?.length) return "no subscriptions";
 
-  const badgeMap = await badgeCountByProfile(profileIds);
   const expiredIds: string[] = [];
 
   await Promise.all(
     subs.map(async (s) => {
-      const payload = JSON.stringify(buildPayload(badgeMap.get(s.profile_id) ?? 1));
+      const payload = JSON.stringify(buildPayload(s.profile_id));
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
         console.log(`push OK -> profile ${s.profile_id}`);
@@ -107,7 +105,10 @@ async function handleChatMessage(body: any) {
 
   const result = await sendPushToProfiles(
     members.map((m) => m.profile_id),
-    (badgeCount) => ({
+    (profileId) => ({
+      notification_id: message_id,
+      profile_id: profileId,
+      category: "chat",
       title: sender?.full_name || "Pesan baru",
       body: snippetFor(message.message_type, message.content),
       icon: sender?.avatar_url || "/icons/icon-192.png",
@@ -115,8 +116,7 @@ async function handleChatMessage(body: any) {
       url: `/chat/${conversation_id}`,
       conversationId: conversation_id,
       tag: `chat-${conversation_id}`,
-      urgent: false,
-      badgeCount
+      urgent: false
     })
   );
   return new Response(result, { status: 200 });
@@ -124,17 +124,19 @@ async function handleChatMessage(body: any) {
 
 // -------- Jalur 2: notifikasi umum (lamaran, pembayaran, escrow, dll) --------
 async function handleGenericNotification(body: any) {
-  const { profile_id, title, body: notifBody, link } = body;
+  const { profile_id, title, body: notifBody, link, notification_id, category } = body;
   if (!profile_id || !title) return new Response("Bad request", { status: 400 });
 
-  const result = await sendPushToProfiles([profile_id], (badgeCount) => ({
+  const result = await sendPushToProfiles([profile_id], () => ({
+    notification_id: notification_id || `${profile_id}-${Date.now()}`,
+    profile_id,
+    category: category || "umum",
     title,
     body: notifBody || "",
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
     url: link || "/notifications",
-    tag: `notif-${profile_id}-${Date.now()}`,
-    badgeCount
+    tag: `notif-${profile_id}-${Date.now()}`
   }));
   return new Response(result, { status: 200 });
 }
