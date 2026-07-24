@@ -6,18 +6,28 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// 10 order per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
 export default function AdminMarketplaceOrdersPage() {
   const supabase = createClient();
   const [rows, setRows] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
 
   async function load() {
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE;
     const { data } = await supabase
       .from("digital_orders")
       .select("*, digital_listings(title), buyer:profiles!digital_orders_buyer_id_fkey(full_name), seller:profiles!digital_orders_seller_id_fkey(full_name)")
       .in("status", ["menunggu_konfirmasi_admin", "sengketa"])
-      .order("created_at", { ascending: true });
-    setRows(data || []);
+      .order("created_at", { ascending: true })
+      .range(from, to);
+    const all = data || [];
+    setHasNext(all.length > PAGE_SIZE);
+    setRows(all.slice(0, PAGE_SIZE));
   }
 
   useEffect(() => {
@@ -30,7 +40,7 @@ export default function AdminMarketplaceOrdersPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page]);
 
   async function review(id: string, approve: boolean) {
     setLoadingId(id);

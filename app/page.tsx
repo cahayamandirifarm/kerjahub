@@ -14,7 +14,6 @@ import { categoryPostCopy } from "@/lib/category-copy";
 import { getHomeJobs } from "@/lib/cached-queries";
 import Pagination from "@/components/Pagination";
 import GuestPageGate from "@/components/GuestPageGate";
-import JobsAutoRefresh from "@/components/JobsAutoRefresh";
 
 // Berapa postingan yang ditampilkan per halaman -- sama untuk semua orang.
 // Tamu (belum login) HANYA boleh membuka halaman 1 (lihat pengecekan
@@ -102,7 +101,6 @@ export default async function HomePage({
       <NearbyJobsSection />
 
       <section id="daftar-kerja" className="max-w-5xl mx-auto px-4 scroll-mt-24">
-        <JobsAutoRefresh tipe={tipe} kategori={searchParams.kategori} />
         <h2 className="section-title mb-4">Jelajahi Peluang</h2>
         <div className="flex items-center gap-2 mb-3">
           <Link

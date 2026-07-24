@@ -1,27 +1,34 @@
 import { createClient } from "@/lib/supabase/server";
 import Pagination from "@/components/Pagination";
-import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
+
+// 10 rating per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
 
 export default async function AdminRatingsPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const page = parsePage(searchParams?.page);
-  const { from, to } = adminRange(page);
 
-  const { data: ratingsRaw } = await supabase
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
+
+  const { data: rows } = await supabase
     .from("ratings")
     .select("*, worker:profiles!ratings_worker_id_fkey(full_name), employer:profiles!ratings_employer_id_fkey(full_name), jobs(title)")
     .order("created_at", { ascending: false })
     .range(from, to);
-  const { pageRows: ratings, hasNext } = splitPage(ratingsRaw, ADMIN_PAGE_SIZE);
+
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const ratings = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold mb-6">Rating & Ulasan</h1>
       <div className="space-y-3">
-        {ratings.length === 0 && (
+        {(!ratings || ratings.length === 0) && (
           <div className="card p-6 text-center text-ink/50 text-sm">Belum ada rating.</div>
         )}
-        {ratings.map((r: any) => (
+        {ratings?.map((r: any) => (
           <div key={r.id} className="card p-4">
             <div className="flex items-center justify-between">
               <p className="font-semibold">{r.worker?.full_name}</p>

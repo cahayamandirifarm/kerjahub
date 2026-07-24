@@ -17,23 +17,33 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+// 10 tiket per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
 export default function AdminDisputesPage() {
   const supabase = createClient();
   const [tab, setTab] = useState<DisputeStatus>("menunggu_admin");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
 
   async function load() {
     setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE;
     const { data } = await supabase
       .from("disputes")
       .select(
         "*, conversation:conversations(id, source_type, job:jobs(title), order:digital_orders(listing:digital_listings(title))), opener:profiles!disputes_opened_by_fkey(full_name), admin:profiles!disputes_assigned_admin_id_fkey(full_name)"
       )
       .eq("status", tab)
-      .order("created_at", { ascending: tab === "menunggu_admin" });
-    setRows(data || []);
+      .order("created_at", { ascending: tab === "menunggu_admin" })
+      .range(from, to);
+    const all = data || [];
+    setHasNext(all.length > PAGE_SIZE);
+    setRows(all.slice(0, PAGE_SIZE));
     setLoading(false);
   }
 
@@ -47,6 +57,10 @@ export default function AdminDisputesPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [tab]);
 
   async function resolve(id: string, status: "selesai" | "ditolak") {
@@ -130,6 +144,23 @@ export default function AdminDisputesPage() {
             </div>
           );
         })}
+      </div>
+      <div className="flex items-center justify-center gap-3 my-8">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Sebelumnya
+        </button>
+        <span className="text-sm text-ink/50 font-semibold px-1">Halaman {page}</span>
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={!hasNext}
+          className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Berikutnya
+        </button>
       </div>
     </div>
   );

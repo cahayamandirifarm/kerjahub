@@ -2,17 +2,22 @@ import { createClient } from "@/lib/supabase/server";
 import StatusBadge from "@/components/StatusStepper";
 import JobStatusButtons from "./JobStatusButtons";
 import Pagination from "@/components/Pagination";
-import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// 10 postingan per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
 export default async function AdminJobsPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
   const supabase = createClient();
   const q = searchParams?.q?.trim() || "";
-  const page = parsePage(searchParams?.page);
-  const { from, to } = adminRange(page);
+
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
 
   let employerIds: string[] = [];
   if (q) {
@@ -34,8 +39,9 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
     query = query.in("employer_id", employerIds.length ? employerIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const { data: jobsRaw } = await query;
-  const { pageRows: jobs, hasNext } = splitPage(jobsRaw, ADMIN_PAGE_SIZE);
+  const { data: rows } = await query;
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const jobs = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
@@ -72,7 +78,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
             </tr>
           </thead>
           <tbody>
-            {jobs.map((j: any) => (
+            {jobs?.map((j: any) => (
               <tr key={j.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium max-w-xs truncate">{j.title}</td>
                 <td className="px-4 py-3">{j.profiles?.full_name}</td>
@@ -106,7 +112,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: { 
             ))}
           </tbody>
         </table>
-        {jobs.length === 0 && (
+        {jobs?.length === 0 && (
           <div className="p-6 text-center text-ink/50 text-sm">
             {q ? `Tidak ada postingan dari pengguna "${q}".` : "Belum ada postingan kerja."}
           </div>

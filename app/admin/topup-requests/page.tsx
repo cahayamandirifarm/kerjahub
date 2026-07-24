@@ -6,6 +6,9 @@ function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// 10 permintaan per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
 interface TopupRow {
   id: string;
   user_id: string;
@@ -24,19 +27,25 @@ export default function AdminTopupRequestsPage() {
   const [rows, setRows] = useState<TopupRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
 
   async function load() {
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE;
     let query = supabase
       .from("topup_requests")
       .select("*, profiles!topup_requests_user_id_fkey(full_name, username)")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .range(from, to);
     if (filter === "pending") query = query.eq("status", "pending");
     const { data, error } = await query;
     if (error) {
       console.error("Gagal memuat permintaan top up:", error);
     }
-    setRows((data as any) || []);
+    const all = (data as any) || [];
+    setHasNext(all.length > PAGE_SIZE);
+    setRows(all.slice(0, PAGE_SIZE));
   }
 
   useEffect(() => {
@@ -53,6 +62,10 @@ export default function AdminTopupRequestsPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [filter]);
 
   async function review(id: string, approve: boolean) {
@@ -133,6 +146,23 @@ export default function AdminTopupRequestsPage() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="flex items-center justify-center gap-3 my-8">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Sebelumnya
+        </button>
+        <span className="text-sm text-ink/50 font-semibold px-1">Halaman {page}</span>
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={!hasNext}
+          className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Berikutnya
+        </button>
       </div>
     </div>
   );

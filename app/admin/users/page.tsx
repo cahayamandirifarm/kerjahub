@@ -4,7 +4,9 @@ import DeleteUserButton from "./DeleteUserButton";
 import EditBalanceButton from "./EditBalanceButton";
 import { usernameToEmail } from "@/lib/auth-helpers";
 import Pagination from "@/components/Pagination";
-import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
+
+// 10 pengguna per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
 
 // UUID akun superadmin — hanya akun ini yang boleh mengubah saldo pengguna.
 // Dicocokkan dengan pengecekan yang sama di fungsi database admin_adjust_balance,
@@ -24,15 +26,19 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
   const isSuperadmin = currentUser?.id === SUPERADMIN_ID;
 
   const q = searchParams?.q?.trim() || "";
-  const page = parsePage(searchParams?.page);
-  const { from, to } = adminRange(page);
+
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
 
   let query = supabase.from("profiles").select("*").order("created_at", { ascending: false }).range(from, to);
   if (q) {
     query = query.or(`username.ilike.%${q}%,full_name.ilike.%${q}%`);
   }
-  const { data: users } = await query;
-  const { pageRows, hasNext } = splitPage(users, ADMIN_PAGE_SIZE);
+  const { data: rows } = await query;
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const users = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
@@ -70,7 +76,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((u) => (
+            {users?.map((u) => (
               <tr key={u.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{u.full_name}</td>
                 <td className="px-4 py-3 text-ink/70">{u.phone || "-"}</td>
@@ -109,7 +115,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: {
             ))}
           </tbody>
         </table>
-        {pageRows.length === 0 && (
+        {users?.length === 0 && (
           <div className="p-6 text-center text-ink/50 text-sm">
             {q ? `Tidak ada pengguna dengan nama/username "${q}".` : "Belum ada pengguna."}
           </div>

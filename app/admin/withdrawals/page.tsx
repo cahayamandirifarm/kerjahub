@@ -1,22 +1,35 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminTxReviewButtons } from "@/components/AdminReviewButtons";
+import Pagination from "@/components/Pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
-export default async function AdminWithdrawalsPage() {
+// 10 pengajuan per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
+export default async function AdminWithdrawalsPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const { data: withdrawals, error } = await supabase
+
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
+
+  const { data: rows, error } = await supabase
     .from("transactions")
     .select("*, profiles!transactions_profile_id_fkey(full_name, role)")
     .eq("type", "penarikan")
     .eq("status", "menunggu")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .range(from, to);
 
   if (error) {
     console.error("Gagal memuat penarikan saldo:", error);
   }
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const withdrawals = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
@@ -41,6 +54,7 @@ export default async function AdminWithdrawalsPage() {
           </div>
         ))}
       </div>
+      <Pagination basePath="/admin/withdrawals" params={{}} currentPage={page} hasNext={hasNext} />
     </div>
   );
 }

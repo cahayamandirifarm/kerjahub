@@ -1,18 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminTxReviewButtons } from "@/components/AdminReviewButtons";
 import Pagination from "@/components/Pagination";
-import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
+// 10 pengajuan per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
+
 export default async function AdminDepositsPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const page = parsePage(searchParams?.page);
-  const { from, to } = adminRange(page);
 
-  const { data: depositsRaw, error } = await supabase
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
+
+  const { data: rows, error } = await supabase
     .from("transactions")
     .select("*, profiles!transactions_profile_id_fkey(full_name)")
     .eq("type", "deposit")
@@ -23,16 +28,17 @@ export default async function AdminDepositsPage({ searchParams }: { searchParams
   if (error) {
     console.error("Gagal memuat top up dompet lama:", error);
   }
-  const { pageRows: deposits, hasNext } = splitPage(depositsRaw, ADMIN_PAGE_SIZE);
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const deposits = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold mb-6">Top Up Masuk (Bukti QRIS / Transfer)</h1>
       <div className="space-y-3">
-        {deposits.length === 0 && (
+        {(!deposits || deposits.length === 0) && (
           <div className="card p-6 text-center text-ink/50 text-sm">Tidak ada pengajuan top up yang menunggu.</div>
         )}
-        {deposits.map((tx: any) => (
+        {deposits?.map((tx: any) => (
           <div key={tx.id} className="card p-4 flex flex-col md:flex-row md:items-center gap-4 justify-between">
             <div>
               <p className="font-semibold">{tx.profiles?.full_name}</p>

@@ -1,18 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import Pagination from "@/components/Pagination";
-import { ADMIN_PAGE_SIZE, adminRange, parsePage, splitPage } from "@/lib/admin-pagination";
+
+// 10 entri per halaman agar query & payload halaman admin lebih ringan.
+const PAGE_SIZE = 10;
 
 export default async function AdminAuditLogPage({ searchParams }: { searchParams: { page?: string } }) {
   const supabase = createClient();
-  const page = parsePage(searchParams?.page);
-  const { from, to } = adminRange(page);
 
-  const { data: logsRaw } = await supabase
+  const pageParam = Number(searchParams?.page);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
+
+  const { data: rows } = await supabase
     .from("audit_log")
     .select("*, profiles(full_name)")
     .order("created_at", { ascending: false })
     .range(from, to);
-  const { pageRows: logs, hasNext } = splitPage(logsRaw, ADMIN_PAGE_SIZE);
+
+  const hasNext = (rows?.length || 0) > PAGE_SIZE;
+  const logs = (rows || []).slice(0, PAGE_SIZE);
 
   return (
     <div>
@@ -28,7 +35,7 @@ export default async function AdminAuditLogPage({ searchParams }: { searchParams
             </tr>
           </thead>
           <tbody>
-            {logs.map((l: any) => (
+            {logs?.map((l: any) => (
               <tr key={l.id} className="border-t border-line">
                 <td className="px-4 py-3 text-ink/50 whitespace-nowrap">
                   {new Date(l.created_at).toLocaleString("id-ID")}
@@ -42,9 +49,6 @@ export default async function AdminAuditLogPage({ searchParams }: { searchParams
             ))}
           </tbody>
         </table>
-        {logs.length === 0 && (
-          <div className="p-6 text-center text-ink/50 text-sm">Belum ada aktivitas.</div>
-        )}
       </div>
       <Pagination basePath="/admin/audit-log" params={{}} currentPage={page} hasNext={hasNext} />
     </div>
