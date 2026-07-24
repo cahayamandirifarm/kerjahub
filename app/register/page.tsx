@@ -5,6 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { usernameToEmail, isValidUsername, isValidPhone } from "@/lib/auth-helpers";
 import Link from "next/link";
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))
+  ]);
+}
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,67 +55,74 @@ function RegisterForm() {
     setLoading(true);
     const supabase = createClient();
 
-    const { data: available } = await supabase.rpc("is_username_available", { p_username: username });
-    if (available === false) {
-      setLoading(false);
-      setError("Username sudah dipakai, coba yang lain.");
-      return;
-    }
+    // Batas waktu keseluruhan 25 detik buat SELURUH proses daftar (ada
+    // beberapa langkah berurutan ke server: cek username, cek referral,
+    // signUp, auto sign-in). Sebelumnya kalau server lambat/tidak
+    // merespons di salah satu langkah, tombol "Mendaftar..." menggantung
+    // selamanya tanpa pesan apa pun ke pengguna.
+    try {
+      await withTimeout(
+        (async () => {
+          const { data: available } = await supabase.rpc("is_username_available", { p_username: username });
+          if (available === false) {
+            throw { userMessage: "Username sudah dipakai, coba yang lain." };
+          }
 
-    const cleanReferralCode = referralCode.trim().toUpperCase();
-    if (cleanReferralCode) {
-      if (!/^[A-Z0-9]{6}$/.test(cleanReferralCode)) {
-        setLoading(false);
-        setError("Kode referral harus 6 karakter huruf/angka.");
-        return;
-      }
-      const { data: validRef } = await supabase.rpc("is_referral_code_valid", { p_code: cleanReferralCode });
-      if (validRef === false) {
-        setLoading(false);
-        setError("Kode referral tidak ditemukan. Kosongkan jika tidak punya kode.");
-        return;
-      }
-    }
+          const cleanReferralCode = referralCode.trim().toUpperCase();
+          if (cleanReferralCode) {
+            if (!/^[A-Z0-9]{6}$/.test(cleanReferralCode)) {
+              throw { userMessage: "Kode referral harus 6 karakter huruf/angka." };
+            }
+            const { data: validRef } = await supabase.rpc("is_referral_code_valid", { p_code: cleanReferralCode });
+            if (validRef === false) {
+              throw { userMessage: "Kode referral tidak ditemukan. Kosongkan jika tidak punya kode." };
+            }
+          }
 
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: usernameToEmail(username),
-      password,
-      options: {
-        data: { username, phone, referral_code: cleanReferralCode || null }
-      }
-    });
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: usernameToEmail(username),
+            password,
+            options: {
+              data: { username, phone, referral_code: cleanReferralCode || null }
+            }
+          });
 
-    if (signUpError) {
-      setLoading(false);
-      // Sengaja di-log lengkap ke console supaya penyebab asli kelihatan
-      // (sebelumnya pesan error dari Supabase dibuang & diganti teks generik,
-      // jadi penyebab gagal daftar tidak pernah terlihat).
-      // eslint-disable-next-line no-console
-      console.error("signUp error:", {
-        message: signUpError.message,
-        status: (signUpError as any).status,
-        code: (signUpError as any).code,
-        name: signUpError.name
-      });
-      setError(
-        signUpError.message.includes("registered")
-          ? "Username sudah dipakai, coba yang lain."
-          : `Gagal mendaftar: ${signUpError.message}`
+          if (signUpError) {
+            // Sengaja di-log lengkap ke console supaya penyebab asli kelihatan
+            // (sebelumnya pesan error dari Supabase dibuang & diganti teks generik,
+            // jadi penyebab gagal daftar tidak pernah terlihat).
+            // eslint-disable-next-line no-console
+            console.error("signUp error:", {
+              message: signUpError.message,
+              status: (signUpError as any).status,
+              code: (signUpError as any).code,
+              name: signUpError.name
+            });
+            throw {
+              userMessage: signUpError.message.includes("registered")
+                ? "Username sudah dipakai, coba yang lain."
+                : `Gagal mendaftar: ${signUpError.message}`
+            };
+          }
+
+          const { error: loginError } = await supabase.auth.signInWithPassword({
+            email: usernameToEmail(username),
+            password
+          });
+          if (loginError) {
+            router.push("/login");
+            return;
+          }
+          router.push(next);
+          router.refresh();
+        })(),
+        25000
       );
-      return;
+    } catch (err: any) {
+      setError(err?.userMessage || "Server tidak merespons. Cek koneksi internet kamu dan coba lagi.");
+    } finally {
+      setLoading(false);
     }
-
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password
-    });
-    setLoading(false);
-    if (loginError) {
-      router.push("/login");
-      return;
-    }
-    router.push(next);
-    router.refresh();
   }
 
   return (

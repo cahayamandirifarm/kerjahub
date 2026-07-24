@@ -5,6 +5,13 @@ import { usernameToEmail } from "@/lib/auth-helpers";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))
+  ]);
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,16 +27,40 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     const supabase = createClient();
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password
-    });
+    // Batas waktu 15 detik -- sebelumnya kalau server Supabase lambat/tidak
+    // merespons (mis. project lagi paused/bangun dari sleep di tier gratis),
+    // tombol ini akan menggantung selamanya di "Masuk..." tanpa pesan apa
+    // pun ke pengguna. Sekarang minimal muncul pesan jelas, bukan macet diam.
+    let data, authError;
+    try {
+      const res = await withTimeout(
+        supabase.auth.signInWithPassword({ email: usernameToEmail(username), password }),
+        15000
+      );
+      data = res.data;
+      authError = res.error;
+    } catch {
+      setLoading(false);
+      setError("Server tidak merespons. Cek koneksi internet kamu dan coba lagi.");
+      return;
+    }
     if (authError || !data.user) {
       setLoading(false);
       setError("Username atau kata sandi salah.");
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
+    let profile;
+    try {
+      const res = await withTimeout(
+        supabase.from("profiles").select("role").eq("id", data.user.id).single(),
+        15000
+      );
+      profile = res.data;
+    } catch {
+      // Auth-nya sendiri sudah berhasil -- kalaupun cek role telat, tetap
+      // lanjutkan masuk daripada menggantung selamanya di sini.
+      profile = null;
+    }
     if (profile?.role === "admin") {
       await supabase.auth.signOut();
       setLoading(false);
