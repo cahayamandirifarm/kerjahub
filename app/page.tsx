@@ -5,10 +5,13 @@ import NearbyJobsSection from "@/components/NearbyJobsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import SiteBanner from "@/components/SiteBanner";
 import BannerCarousel from "@/components/BannerCarousel";
-import { JOB_CATEGORIES } from "@/lib/types";
+import { Job, JOB_CATEGORIES } from "@/lib/types";
 import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 import { categoryPostCopy } from "@/lib/category-copy";
+import { getHomeJobs } from "@/lib/cached-queries";
+import JobCard from "@/components/JobCard";
+import { Wifi } from "lucide-react";
 
 // CATATAN PERUBAHAN (update fitur beranda):
 // Beranda TIDAK LAGI menampilkan daftar kartu postingan (jobs) langsung di
@@ -30,6 +33,13 @@ import { categoryPostCopy } from "@/lib/category-copy";
 //      bawahnya -- lihat juga perbaikan cache di komponen tsb (TTL
 //      diturunkan dari 7 hari jadi 15 menit, supaya postingan
 //      terhapus/nonaktif tidak nyangkut lama di cache device pengguna).
+//   3) Di bawah itu, bagian khusus "Penerima Upah -- Remote": daftar
+//      postingan jasa (posted_by_role='worker', yaitu "Saya Butuh
+//      Pekerjaan / Penerima Upah") yang is_remote=true saja. Diambil dari
+//      getHomeJobs("worker", ...) yang sudah cache 30 menit di server DAN
+//      sudah filter is_active=true & stage='terbuka', lalu di-filter lagi
+//      is_remote=true di sini -- jadi postingan yang dihapus/nonaktif atau
+//      bukan remote tidak ikut tampil.
 // Daftar kartu postingan + paginasi + guest-gate yang tadinya ada di sini
 // dihapus dari beranda (bukan dihapus dari aplikasi -- pencarian per
 // kategori tetap ada di /kategori).
@@ -45,6 +55,14 @@ export default async function HomePage({
   // "Saya Butuh Pekerja (Pemberi Upah)" kalau usernya klik tombol itu
   // (?tipe=kerja).
   const tipe = searchParams.tipe === "kerja" ? "employer" : "worker";
+
+  // Postingan "Saya Butuh Pekerjaan (Penerima Upah)" khusus yang Remote --
+  // ditampilkan di bagian tersendiri di bawah "Lowongan & Pekerja
+  // Terdekat". getHomeJobs sudah cache 30 menit & sudah filter
+  // is_active=true + stage='terbuka' di server -- di sini tinggal disaring
+  // lagi is_remote=true, lalu dibatasi 10 kartu.
+  const workerJobs = await getHomeJobs("worker").catch(() => null);
+  const remoteWorkerJobs = ((workerJobs as Job[] | null) ?? []).filter((j) => j.is_remote).slice(0, 10);
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">
@@ -120,6 +138,22 @@ export default async function HomePage({
       </section>
 
       <NearbyJobsSection />
+
+      {remoteWorkerJobs.length > 0 && (
+        <section className="max-w-5xl mx-auto px-4 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Wifi size={16} className="text-turquoise" />
+            <h2 className="font-display text-lg font-semibold">
+              Saya Butuh Pekerjaan (Penerima Upah) &mdash; Khusus Remote
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {remoteWorkerJobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <BottomNav />
       <LocationPrompt />
