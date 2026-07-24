@@ -11,6 +11,7 @@ interface Profile {
   avatar_url: string | null;
   role: string;
   notif_sound_enabled: boolean;
+  kyc_status: "belum" | "menunggu" | "terverifikasi" | "ditolak";
 }
 
 interface AuthState {
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // fetch langsung ke server, sama seperti sebelum fitur cache ada.
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, full_name, avatar_url, role, notif_sound_enabled")
+      .select("id, username, full_name, avatar_url, role, notif_sound_enabled, kyc_status")
       .eq("id", uid)
       .single();
 

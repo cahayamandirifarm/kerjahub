@@ -68,12 +68,18 @@ function sortByPopularity<T extends { view_count?: number; created_at: string; p
 export const getHomeJobs = unstable_cache(
   async (tipe: "employer" | "worker", kategori?: string) => {
     const supabase = createPublicClient();
+    // profiles!inner (bukan left join biasa) supaya .eq("profiles.kyc_status", ...)
+    // di bawah benar-benar menyaring baris jobs, bukan cuma menyaring field
+    // profiles-nya. Ini pertahanan tambahan di level query di atas RLS
+    // (migration 0062) -- postingan dari user yang belum terverifikasi tidak
+    // ikut diambil sama sekali di feed publik.
     let query = supabase
       .from("jobs")
-      .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
+      .select("*, profiles!jobs_employer_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
       .eq("stage", "terbuka")
       .eq("is_active", true)
       .eq("posted_by_role", tipe)
+      .eq("profiles.kyc_status", "terverifikasi")
       .order("created_at", { ascending: false })
       .limit(150);
     if (kategori) query = query.eq("category", kategori);
@@ -105,8 +111,9 @@ export const getMarketplaceListings = unstable_cache(
     const supabase = createPublicClient();
     let query = supabase
       .from("digital_listings")
-      .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
+      .select("*, profiles!digital_listings_seller_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
       .eq("status", "aktif")
+      .eq("profiles.kyc_status", "terverifikasi")
       .order("created_at", { ascending: false })
       .limit(150);
     if (kategori) query = query.eq("category", kategori);
@@ -131,8 +138,9 @@ export async function searchMarketplaceListings(q: string, kategori?: string) {
   const supabase = createPublicClient();
   let query = supabase
     .from("digital_listings")
-    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
+    .select("*, profiles!digital_listings_seller_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
     .eq("status", "aktif")
+    .eq("profiles.kyc_status", "terverifikasi")
     .ilike("title", `%${q.trim()}%`)
     .order("created_at", { ascending: false })
     .limit(100);

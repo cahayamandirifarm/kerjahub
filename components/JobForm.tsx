@@ -1,9 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { JOB_CATEGORIES } from "@/lib/types";
 import { revalidateListings } from "@/lib/revalidate-listings";
+import { useAuth } from "@/lib/AuthContext";
+import VerificationRequiredModal from "@/components/VerificationRequiredModal";
+import { ShieldAlert } from "lucide-react";
 
 type Role = "employer" | "worker";
 
@@ -95,6 +99,21 @@ export default function JobForm({ role, jobId, initial }: Props) {
   const isEdit = !!jobId;
   const c = COPY[role];
   const router = useRouter();
+  const { profile, loading: authLoading } = useAuth();
+  const isVerified = profile?.kyc_status === "terverifikasi";
+  // Hanya posting BARU yang wajib verifikasi -- edit postingan yang sudah
+  // ada tetap boleh dilanjutkan (postingan lama otomatis disembunyikan dari
+  // publik oleh RLS kalau akunnya belum/tidak lagi terverifikasi, lihat
+  // migration 0062).
+  const blockPosting = !isEdit && !authLoading && !!profile && !isVerified;
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+
+  // Auto-blokir & pop up peringatan segera setelah status verifikasi
+  // diketahui, tanpa menunggu user menekan tombol submit.
+  useEffect(() => {
+    if (blockPosting) setShowVerifyModal(true);
+  }, [blockPosting]);
+
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     category: initial?.category ?? JOB_CATEGORIES[0],
@@ -136,6 +155,10 @@ export default function JobForm({ role, jobId, initial }: Props) {
     } = await supabase.auth.getUser();
     if (!user) {
       router.push(`/login?next=${isEdit ? `/dashboard/job/${jobId}/edit` : role === "employer" ? "/dashboard/employer/post-job" : "/dashboard/worker/post-listing"}`);
+      return;
+    }
+    if (!isEdit && !isVerified) {
+      setShowVerifyModal(true);
       return;
     }
 
@@ -189,6 +212,24 @@ export default function JobForm({ role, jobId, initial }: Props) {
       <h1 className="font-display text-2xl font-semibold mb-1">{isEdit ? c.headingEdit : c.headingCreate}</h1>
       <p className="text-sm text-ink/60 mb-6">{isEdit ? c.subEdit : c.subCreate}</p>
 
+      <VerificationRequiredModal
+        open={showVerifyModal}
+        kycStatus={profile?.kyc_status}
+        onClose={() => setShowVerifyModal(false)}
+      />
+
+      {blockPosting ? (
+        <div className="card p-8 text-center">
+          <ShieldAlert className="mx-auto mb-3 text-clay" size={28} />
+          <h3 className="font-display text-lg font-semibold text-ink mb-1">Verifikasi Akun Diperlukan</h3>
+          <p className="text-sm text-ink/60 mb-5">
+            Hanya akun terverifikasi (KYC) yang bisa memposting lowongan/jasa. Verifikasi akunmu dulu untuk melanjutkan.
+          </p>
+          <Link href="/kyc" className="btn-primary !px-5 !py-2.5 text-sm inline-block">
+            Verifikasi Akun Sekarang
+          </Link>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">{c.titleLabel}</label>
@@ -292,6 +333,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
           {loading ? (isEdit ? "Menyimpan..." : "Memasang...") : isEdit ? "Simpan Perubahan" : c.submitCreate}
         </button>
       </form>
+      )}
     </div>
   );
 }
