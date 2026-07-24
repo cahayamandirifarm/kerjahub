@@ -57,7 +57,19 @@ export default async function EmployerDashboard() {
       .eq("removed_by_poster", false)
       .neq("stage", "selesai")
       .order("created_at", { ascending: false }),
-    supabase.from("digital_listings").select("*").eq("seller_id", user.id).order("created_at", { ascending: false })
+    supabase
+      .from("digital_listings")
+      .select("*")
+      .eq("seller_id", user.id)
+      // Listing dengan status "dihapus" (soft-delete -- dipakai saat hapus
+      // permanen gagal karena sudah ada riwayat transaksi, lihat
+      // ListingPostingActions.tsx & admin/marketplace-listings) sudah
+      // dianggap tidak ada oleh pemiliknya. Sebelumnya tidak difilter di
+      // sini, jadi produk yang "sudah dihapus" tetap nongol permanen di
+      // dasbor. Sembunyikan dari daftar, sama seperti jobs yang sudah
+      // di-soft-delete (removed_by_poster = false di query jobs atas).
+      .neq("status", "dihapus")
+      .order("created_at", { ascending: false })
   ]);
 
   return (

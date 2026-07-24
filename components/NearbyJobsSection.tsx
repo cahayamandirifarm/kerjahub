@@ -85,9 +85,18 @@ export default function NearbyJobsSection() {
           // jangan ambil resource API lagi selama masih dalam rentang itu).
           const latKey = pos.coords.latitude.toFixed(2);
           const lngKey = pos.coords.longitude.toFixed(2);
+          // TTL diturunkan dari 7 hari -> 15 menit. Dengan TTL 7 hari,
+          // postingan yang baru dihapus/dinonaktifkan pengirimnya tetap
+          // tampil di kartu "Lowongan & Pekerja Terdekat" sampai 7 hari
+          // karena swrFetch SAMA SEKALI TIDAK query ulang ke Supabase
+          // selama cache masih "fresh" (lihat lib/client-cache.ts). 15
+          // menit selaras dengan cache sisi server (getHomeJobs, dll)
+          // supaya postingan yang sudah dihapus/nonaktif hilang dari
+          // tampilan dalam waktu wajar, sambil tetap mengurangi request
+          // berulang ke Supabase saat beranda dibuka berkali-kali.
           swrFetch<NearbyItem[]>(
             `nearby:${latKey}:${lngKey}`,
-            7 * 24 * 60 * 60 * 1000,
+            15 * 60 * 1000,
             async () => {
               const [jobsRes, workersRes] = await Promise.all([
                 jobsEnabled

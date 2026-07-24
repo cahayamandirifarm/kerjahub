@@ -1,72 +1,44 @@
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
-import JobCard from "@/components/JobCard";
 import NearbyJobsSection from "@/components/NearbyJobsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import SiteBanner from "@/components/SiteBanner";
 import BannerCarousel from "@/components/BannerCarousel";
-import { Job, JOB_CATEGORIES } from "@/lib/types";
-import { Search } from "lucide-react";
+import { JOB_CATEGORIES } from "@/lib/types";
 import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 import { categoryPostCopy } from "@/lib/category-copy";
-import { getHomeJobs } from "@/lib/cached-queries";
-import Pagination from "@/components/Pagination";
-import GuestPageGate from "@/components/GuestPageGate";
 
-// Berapa postingan yang ditampilkan per halaman -- sama untuk semua orang.
-// Tamu (belum login) HANYA boleh membuka halaman 1 (lihat pengecekan
-// isGuestBlocked di bawah); untuk lanjut ke halaman berikutnya wajib
-// login/daftar dulu.
-const PAGE_SIZE = 10;
-
-// Daftar pekerjaan di beranda tidak lagi query Supabase langsung di setiap
-// kunjungan -- diambil lewat getHomeJobs (Next.js Data Cache, cache 15
-// menit). Halaman 1 tidak memanggil cookies() sama sekali, jadi
-// Next.js/Vercel masih bisa menyajikannya dari cache (ISR) ke banyak
-// pengunjung sekaligus. Cookies (lewat createClient di lib/supabase/server)
-// HANYA dipanggil kalau ada yang minta halaman ke-2 dst, khusus untuk cek
-// status login guest -- request itu jadi dynamic per-request, tapi
-// halaman 1 (yang paling sering dikunjungi) tetap dapat manfaat ISR.
+// CATATAN PERUBAHAN (update fitur beranda):
+// Beranda TIDAK LAGI menampilkan daftar kartu postingan (jobs) langsung di
+// halaman ini. Alasan: daftar itu diambil lewat getHomeJobs yang di-cache
+// s.d. 30 menit (Next.js Data Cache) DAN sebelumnya dipasangkan dengan
+// paginasi/guest-gate yang bikin halaman ini berat & gampang menampilkan
+// data yang sudah basi (postingan yang baru dihapus/nonaktif tampak masih
+// ada sampai cache kedaluwarsa). Supaya beranda selalu ringan dan tidak
+// pernah menampilkan postingan yang sudah dihapus/nonaktif, beranda
+// sekarang HANYA berisi:
+//   1) Bagian "Lowongan & Pekerja Terdekat" (NearbyJobsSection) -- lihat
+//      juga perbaikan cache di komponen tsb (TTL diturunkan dari 7 hari
+//      jadi 15 menit, supaya postingan terhapus/nonaktif tidak nyangkut
+//      lama di cache device pengguna).
+//   2) Menu/grid kategori -- mengarahkan ke halaman /kategori yang
+//      MENGAMBIL DATA LANGSUNG (fresh, tidak di-cache lama) lewat RPC
+//      nearby_jobs/nearby_workers, yang sudah memfilter is_active=true &
+//      stage='terbuka' di sisi database, jadi postingan yang sudah
+//      dihapus/dinonaktifkan otomatis tidak pernah ikut tampil.
+// Daftar kartu postingan + paginasi + guest-gate yang tadinya ada di sini
+// dihapus dari beranda (bukan dihapus dari aplikasi -- pencarian per
+// kategori tetap ada di /kategori).
 export const revalidate = 900;
 
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: { kategori?: string; tipe?: string; page?: string };
+  searchParams: { kategori?: string; tipe?: string };
 }) {
   const tipe = searchParams.tipe === "jasa" ? "worker" : "employer";
-  // getHomeJobs sengaja throw kalau query ke Supabase gagal (supaya hasil
-  // gagal itu tidak ikut ke-cache 30 menit sebagai "kosong" -- lihat
-  // lib/cached-queries.ts). Di level halaman ini kita tangkap supaya
-  // kegagalan sesaat menampilkan state "belum ada postingan" yang aman,
-  // bukan meng-crash seluruh halaman beranda.
-  const jobs = await getHomeJobs(tipe, searchParams.kategori).catch(() => null);
-
-  const pageParam = Number(searchParams.page);
-  const page = Number.isFinite(pageParam) && pageParam > 1 ? Math.floor(pageParam) : 1;
-
-  // Batasan tamu: halaman ke-2 dst dari feed publik ini wajib login.
-  // Cek ini SENGAJA hanya dilakukan kalau page > 1, supaya halaman 1 (yang
-  // paling banyak dikunjungi) tidak ikut memanggil cookies()/auth dan tetap
-  // bisa di-ISR-cache seperti sebelumnya.
-  let isGuestBlocked = false;
-  if (page > 1) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = createClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    if (!user) isGuestBlocked = true;
-  }
-
-  const allJobs = (jobs as Job[] | null) ?? [];
-  const pageJobs = allJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const hasNext = allJobs.length > page * PAGE_SIZE;
-  const nextPath = `/?tipe=${searchParams.tipe === "jasa" ? "jasa" : "kerja"}${
-    searchParams.kategori ? `&kategori=${encodeURIComponent(searchParams.kategori)}` : ""
-  }&page=${page}`;
 
   return (
     <div className="min-h-screen pb-24 md:pb-10">
@@ -124,7 +96,7 @@ export default async function HomePage({
         </div>
 
         <h3 className="font-display text-sm font-semibold text-ink/70 mb-3">Semua Kategori</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {JOB_CATEGORIES.map((c) => {
             const copy = categoryPostCopy(c, tipe === "worker" ? "jasa" : "kerja");
             return (
@@ -141,32 +113,6 @@ export default async function HomePage({
             );
           })}
         </div>
-
-        {isGuestBlocked ? (
-          <GuestPageGate next={nextPath} />
-        ) : (
-          <>
-            {pageJobs.length === 0 && (
-              <div className="card p-8 text-center text-ink/50">
-                <Search className="mx-auto mb-3" />
-                {tipe === "worker" ? "Belum ada pekerja yang menawarkan jasa di kategori ini." : "Belum ada penawaran kerja untuk kategori ini."}
-              </div>
-            )}
-
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
-              {pageJobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
-
-            <Pagination
-              basePath="/"
-              params={{ tipe: searchParams.tipe, kategori: searchParams.kategori }}
-              currentPage={page}
-              hasNext={hasNext}
-            />
-          </>
-        )}
       </section>
 
       <BottomNav />
