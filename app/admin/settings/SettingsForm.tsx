@@ -8,7 +8,7 @@ interface Setting {
   description: string | null;
 }
 
-const BOOLEAN_KEYS = ["nearby_jobs_enabled", "nearby_workers_enabled", "gps_request_enabled"];
+const BOOLEAN_KEYS = ["nearby_jobs_enabled", "nearby_workers_enabled", "gps_request_enabled", "registration_enabled"];
 const SELECT_OPTIONS: Record<string, string[]> = {
   default_radius_km: ["5", "10", "20", "30", "50", "100"],
   map_unit: ["meter", "km"]

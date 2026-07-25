@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usernameToEmail, isValidUsername, isValidPhone } from "@/lib/auth-helpers";
 import Link from "next/link";
+import { UserX } from "lucide-react";
 
 function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -25,9 +26,29 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Dicek fresh (tanpa cache) tiap kali halaman ini dibuka, supaya begitu
+  // admin nyalakan/matikan toggle "registration_enabled" di Dashboard
+  // Admin -> Pengaturan Website, perubahannya langsung berlaku buat
+  // pengguna yang buka /register berikutnya -- bukan menunggu cache lama
+  // kedaluwarsa dulu. `null` = belum selesai dicek dari server.
+  const [registrationEnabled, setRegistrationEnabled] = useState<boolean | null>(null);
+
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) setReferralCode(ref.toUpperCase());
+
+    const supabase = createClient();
+    supabase
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "registration_enabled")
+      .single()
+      .then(({ data }) => {
+        // Kalau baris settingnya belum ada / gagal diambil, default-nya
+        // tetap MENGIZINKAN registrasi (fail-open) -- supaya masalah
+        // koneksi/konfigurasi tidak sampai mengunci pendaftaran user baru.
+        setRegistrationEnabled(data?.value !== "false");
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -35,6 +56,10 @@ function RegisterForm() {
     e.preventDefault();
     setError(null);
 
+    if (registrationEnabled === false) {
+      setError("Registrasi akun baru sedang off sementara.");
+      return;
+    }
     if (!isValidUsername(username)) {
       setError("Username 4-20 karakter, hanya huruf, angka, titik, atau garis bawah.");
       return;
@@ -132,6 +157,15 @@ function RegisterForm() {
           Kerja<span className="text-gold-dark">Hub</span>
         </Link>
         <h1 className="font-display text-xl font-semibold mt-6 mb-2 text-center">Buat Akun Baru</h1>
+
+        {registrationEnabled === false ? (
+          <div className="text-center py-6">
+            <UserX className="mx-auto mb-3 text-ink/30" size={32} />
+            <p className="text-sm font-semibold text-ink">Saat ini registrasi akun baru sedang off sementara.</p>
+            <p className="text-sm text-ink/60 mt-1.5">Silakan coba lagi beberapa saat lagi.</p>
+          </div>
+        ) : (
+          <>
         <p className="text-sm text-ink/60 mb-6 text-center">
           Cukup username, kata sandi, dan nomor HP — simpel dan cepat.
         </p>
@@ -194,10 +228,12 @@ function RegisterForm() {
             <p className="text-xs text-ink/40 mt-1">Punya kode referral dari teman? Isi di sini, kalau tidak ada boleh dikosongkan.</p>
           </div>
           {error && <p className="text-sm text-clay">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <button type="submit" disabled={loading || registrationEnabled === null} className="btn-primary w-full">
             {loading ? "Mendaftar..." : "Daftar"}
           </button>
         </form>
+          </>
+        )}
 
         <p className="text-sm text-ink/60 mt-6 text-center">
           Sudah punya akun?{" "}
