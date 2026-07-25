@@ -188,7 +188,7 @@ function KategoriContent() {
         {locationStatus === "ok" && tipe === "jasa" && workers && workers.length > 0 && (
           <div className="grid sm:grid-cols-2 gap-4 mb-10">
             {workers.map((w) => (
-              <Link key={w.id} href={`/jobs/${w.job_id}`} className="card block p-4 hover:-translate-y-0.5 transition">
+              <Link key={w.job_id} href={`/jobs/${w.job_id}`} className="card block p-4 hover:-translate-y-0.5 transition">
                 <span className="text-[11px] font-bold text-turquoise-dark uppercase tracking-wide">
                   {w.job_category}
                 </span>

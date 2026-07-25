@@ -15,6 +15,8 @@ interface NearbyWorker {
   completed_jobs_count: number;
   is_online: boolean;
   distance_m: number;
+  job_id: string;
+  job_title: string;
 }
 
 export default function NearbyWorkersPage() {
@@ -91,13 +93,14 @@ export default function NearbyWorkersPage() {
 
       <div className="space-y-3">
         {workers?.map((w) => (
-          <div key={w.id} className="card p-4">
+          <div key={w.job_id} className="card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-ink">{w.full_name}</p>
                   {w.is_online && <span className="w-2 h-2 rounded-full bg-turquoise" />}
                 </div>
+                <p className="text-sm text-ink/70 mt-0.5 line-clamp-1">{w.job_title}</p>
                 <p className="text-xs text-ink/50">{w.district || w.city || "Lokasi tidak diketahui"}</p>
               </div>
               <span className="inline-flex items-center gap-1 text-sm font-semibold text-turquoise shrink-0">

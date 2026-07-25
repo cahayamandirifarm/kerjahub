@@ -222,7 +222,7 @@ export default function NearbyJobsSection({
             </Link>
           ) : (
             <Link
-              key={`worker-${item.id}`}
+              key={`worker-${item.job_id}`}
               href={`/jobs/${item.job_id}`}
               className="card block p-4 hover:-translate-y-0.5 transition"
             >
