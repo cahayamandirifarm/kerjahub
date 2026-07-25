@@ -35,7 +35,7 @@ export default function LowonganPekerjaTerdekatPage() {
       </div>
 
       <div className="mt-4">
-        <NearbyJobsSection />
+        <NearbyJobsSection variant="full" />
       </div>
 
       <BottomNav />

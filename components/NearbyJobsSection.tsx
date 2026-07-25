@@ -3,9 +3,19 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistance } from "@/lib/geo-helpers";
 import { swrFetch } from "@/lib/client-cache";
-import { MapPin, Navigation, Star, CheckCircle2, Briefcase, User } from "lucide-react";
+import { MapPin, Navigation, Star, CheckCircle2, Briefcase, User, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import PostCTAButtons from "@/components/PostCTAButtons";
+
+const PAGE_SIZE = 10;
+// Jumlah kartu yang ditampilkan di mode preview (beranda) sebelum tombol
+// "Lihat Semua". RPC tetap ambil sampai PREVIEW_FETCH_LIMIT/FULL_FETCH_LIMIT
+// item per jenis (job/worker) supaya ada cukup data buat dihitung
+// "lebih dari previewCount item -> tampilkan tombol Lihat Semua" dan buat
+// paginasi di mode full.
+const PREVIEW_COUNT = 4;
+const FULL_FETCH_LIMIT = 100;
+const PREVIEW_FETCH_LIMIT = 40;
 
 interface NearbyJob {
   kind: "job";
@@ -46,11 +56,27 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function NearbyJobsSection() {
+export default function NearbyJobsSection({
+  variant = "preview"
+}: {
+  // "preview" -- dipakai di beranda: cuma tampilkan PREVIEW_COUNT kartu +
+  //   tombol "Lihat Semua" kalau hasilnya lebih banyak dari itu.
+  // "full" -- dipakai di halaman /lowongan-pekerja-terdekat: tampilkan
+  //   semua hasil dengan paginasi (10 per halaman).
+  variant?: "preview" | "full";
+}) {
   const supabase = createClient();
   const [items, setItems] = useState<NearbyItem[] | null>(null);
   const [enabled, setEnabled] = useState(true);
   const [unit, setUnit] = useState<"meter" | "km">("km");
+  const [page, setPage] = useState(1);
+
+  // Reset ke halaman 1 setiap kali daftar hasil berubah (mis. lokasi
+  // berubah atau ada revalidasi cache) -- supaya tidak nyangkut di halaman
+  // yang sudah tidak ada datanya.
+  useEffect(() => {
+    setPage(1);
+  }, [items]);
 
   useEffect(() => {
     (async () => {
@@ -94,8 +120,9 @@ export default function NearbyJobsSection() {
           // supaya postingan yang sudah dihapus/nonaktif hilang dari
           // tampilan dalam waktu wajar, sambil tetap mengurangi request
           // berulang ke Supabase saat beranda dibuka berkali-kali.
+          const fetchLimit = variant === "full" ? FULL_FETCH_LIMIT : PREVIEW_FETCH_LIMIT;
           swrFetch<NearbyItem[]>(
-            `nearby:${latKey}:${lngKey}`,
+            `nearby:${variant}:${latKey}:${lngKey}`,
             15 * 60 * 1000,
             async () => {
               const [jobsRes, workersRes] = await Promise.all([
@@ -103,14 +130,14 @@ export default function NearbyJobsSection() {
                   ? supabase.rpc("nearby_jobs", {
                       p_lat: pos.coords.latitude,
                       p_lng: pos.coords.longitude,
-                      p_limit: 40
+                      p_limit: fetchLimit
                     })
                   : Promise.resolve({ data: [] as NearbyJob[] }),
                 workersEnabled
                   ? supabase.rpc("nearby_workers", {
                       p_lat: pos.coords.latitude,
                       p_lng: pos.coords.longitude,
-                      p_limit: 40
+                      p_limit: fetchLimit
                     })
                   : Promise.resolve({ data: [] as NearbyWorker[] })
               ]);
@@ -131,11 +158,28 @@ export default function NearbyJobsSection() {
 
   if (!enabled || !items) return null;
 
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  // Mode preview: potong ke PREVIEW_COUNT kartu saja.
+  // Mode full: potong sesuai halaman aktif, PAGE_SIZE (10) kartu per halaman.
+  const visibleItems =
+    variant === "preview" ? items.slice(0, PREVIEW_COUNT) : items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const showViewAllButton = variant === "preview" && items.length > PREVIEW_COUNT;
+
   return (
     <section id="lowongan-terdekat" className="max-w-5xl mx-auto px-4 mb-8 scroll-mt-24">
-      <div className="flex items-center gap-2 mb-4">
-        <Navigation size={16} className="text-turquoise" />
-        <h2 className="font-display text-lg font-semibold">Lowongan &amp; Pekerja Terdekat</h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Navigation size={16} className="text-turquoise" />
+          <h2 className="font-display text-lg font-semibold">Lowongan &amp; Pekerja Terdekat</h2>
+        </div>
+        {showViewAllButton && (
+          <Link
+            href="/lowongan-pekerja-terdekat"
+            className="inline-flex items-center gap-0.5 text-sm font-semibold text-turquoise shrink-0"
+          >
+            Lihat Semua <ChevronRight size={15} />
+          </Link>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -148,7 +192,7 @@ export default function NearbyJobsSection() {
         </div>
       ) : (
       <div className="grid sm:grid-cols-2 gap-4">
-        {items.map((item) =>
+        {visibleItems.map((item) =>
           item.kind === "job" ? (
             <Link
               key={`job-${item.id}`}
@@ -228,6 +272,44 @@ export default function NearbyJobsSection() {
           )
         )}
       </div>
+      )}
+
+      {variant === "full" && items.length > PAGE_SIZE && (
+        <div className="flex items-center justify-center gap-3 mt-8">
+          {page > 1 ? (
+            <button
+              onClick={() => {
+                setPage((p) => p - 1);
+                document.getElementById("lowongan-terdekat")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5"
+            >
+              Sebelumnya
+            </button>
+          ) : (
+            <span className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white/50 text-ink/30 cursor-not-allowed">
+              Sebelumnya
+            </span>
+          )}
+          <span className="text-sm text-ink/50 font-semibold px-1">
+            Halaman {page} dari {totalPages}
+          </span>
+          {page < totalPages ? (
+            <button
+              onClick={() => {
+                setPage((p) => p + 1);
+                document.getElementById("lowongan-terdekat")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white text-ink/70 hover:bg-ink/5"
+            >
+              Berikutnya
+            </button>
+          ) : (
+            <span className="rounded-pill px-4 py-2 text-sm font-semibold border border-line bg-white/50 text-ink/30 cursor-not-allowed">
+              Berikutnya
+            </span>
+          )}
+        </div>
       )}
     </section>
   );
