@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { JOB_CATEGORIES } from "@/lib/types";
+import { categoriesForRole } from "@/lib/types";
 import { revalidateListings } from "@/lib/revalidate-listings";
 import { useAuth } from "@/lib/AuthContext";
 import VerificationRequiredModal from "@/components/VerificationRequiredModal";
@@ -98,6 +98,7 @@ const COPY: Record<Role, {
 export default function JobForm({ role, jobId, initial }: Props) {
   const isEdit = !!jobId;
   const c = COPY[role];
+  const categories = categoriesForRole(role);
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
   const isVerified = profile?.kyc_status === "terverifikasi";
@@ -116,7 +117,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
 
   const [form, setForm] = useState({
     title: initial?.title ?? "",
-    category: initial?.category ?? JOB_CATEGORIES[0],
+    category: initial?.category ?? categories[0],
     description: initial?.description ?? "",
     location: initial?.location ?? "",
     is_remote: initial?.is_remote ?? false,
@@ -249,7 +250,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         <div>
           <label className="label">Kategori</label>
           <select className="input" value={form.category} onChange={(e) => update("category", e.target.value)}>
-            {JOB_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>

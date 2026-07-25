@@ -5,7 +5,7 @@ import NearbyJobsSection from "@/components/NearbyJobsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import SiteBanner from "@/components/SiteBanner";
 import BannerCarousel from "@/components/BannerCarousel";
-import { Job, JOB_CATEGORIES } from "@/lib/types";
+import { Job, JOB_CATEGORIES, categoriesForRole } from "@/lib/types";
 import PostCTAButtons from "@/components/PostCTAButtons";
 import ScrollToJobsButton from "@/components/ScrollToJobsButton";
 import { categoryPostCopy } from "@/lib/category-copy";
@@ -119,7 +119,7 @@ export default async function HomePage({
 
         <h3 className="font-display text-sm font-semibold text-ink/70 mb-3">Semua Kategori</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-          {JOB_CATEGORIES.map((c) => {
+          {(tipe === "worker" ? categoriesForRole("worker") : JOB_CATEGORIES).map((c) => {
             const copy = categoryPostCopy(c, tipe === "worker" ? "jasa" : "kerja");
             return (
               <Link

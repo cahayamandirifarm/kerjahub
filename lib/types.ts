@@ -112,6 +112,21 @@ export const JOB_CATEGORIES = [
   "Lainnya"
 ];
 
+// Kategori khusus yang HANYA muncul di sisi "Saya Butuh Pekerjaan (Penerima
+// Upah)" -- yaitu worker yang menawarkan jasa -- tidak muncul di sisi
+// "Saya Butuh Pekerja (Pemberi Upah)" / lowongan employer.
+export const WORKER_ONLY_CATEGORIES = ["Mabar Game", "Joki Game"];
+
+// Daftar kategori final sesuai role/tipe posting. "Lainnya" selalu di
+// posisi paling akhir.
+export function categoriesForRole(role: "employer" | "worker"): string[] {
+  if (role === "worker") {
+    const withoutLainnya = JOB_CATEGORIES.filter((c) => c !== "Lainnya");
+    return [...withoutLainnya, ...WORKER_ONLY_CATEGORIES, "Lainnya"];
+  }
+  return JOB_CATEGORIES;
+}
+
 export const DIGITAL_CATEGORIES: { value: string; label: string }[] = [
   { value: "akun_game", label: "Akun Game" },
   { value: "akun_tiktok", label: "Akun TikTok" },
