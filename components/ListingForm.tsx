@@ -142,7 +142,10 @@ export default function ListingForm({ listingId, initial }: Props) {
       const { error: updateError } = await supabase.from("digital_listings").update(payload).eq("id", listingId).eq("seller_id", user.id);
       setLoading(false);
       if (updateError) {
-        setError("Gagal menyimpan perubahan.");
+        // errcode P0001 = exception dari trigger kita sendiri (mis. filter
+        // moderasi konten) -- pesannya sudah jelas untuk user, tampilkan
+        // apa adanya; selain itu tetap pakai pesan generik.
+        setError(updateError.code === "P0001" ? updateError.message : "Gagal menyimpan perubahan.");
         return;
       }
       revalidateListings();
@@ -152,7 +155,7 @@ export default function ListingForm({ listingId, initial }: Props) {
       const { error: insertError } = await supabase.from("digital_listings").insert({ seller_id: user.id, ...payload });
       setLoading(false);
       if (insertError) {
-        setError("Gagal memposting produk.");
+        setError(insertError.code === "P0001" ? insertError.message : "Gagal memposting produk.");
         return;
       }
       revalidateListings();

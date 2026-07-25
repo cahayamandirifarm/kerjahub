@@ -183,7 +183,11 @@ export default function JobForm({ role, jobId, initial }: Props) {
       const { error: updateError } = await supabase.from("jobs").update(payload).eq("id", jobId).eq("employer_id", user.id);
       setLoading(false);
       if (updateError) {
-        setError(c.failEdit);
+        // errcode P0001 = exception yang sengaja dilempar trigger kita sendiri
+        // (mis. filter moderasi konten) -- pesannya sudah jelas & untuk user,
+        // jadi tampilkan apa adanya. Selain itu (error tak terduga/teknis)
+        // tetap pakai pesan generik supaya tidak membingungkan.
+        setError(updateError.code === "P0001" ? updateError.message : c.failEdit);
         return;
       }
       revalidateListings();
@@ -199,7 +203,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
       });
       setLoading(false);
       if (insertError) {
-        setError(c.failCreate);
+        setError(insertError.code === "P0001" ? insertError.message : c.failCreate);
         return;
       }
       revalidateListings();

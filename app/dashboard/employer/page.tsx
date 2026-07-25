@@ -136,9 +136,9 @@ export default async function EmployerDashboard() {
       {/* 1) Penawaran Kerja Saya (posted_by_role = employer)            */}
       {/* ------------------------------------------------------------- */}
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Penawaran Kerja Saya</h2>
+        <h2 className="font-display text-lg font-semibold">Saya Butuh Pekerja (Pemberi Upah)</h2>
         <Link href="/dashboard/employer/post-job" className="btn-primary !px-4 !py-2 text-sm gap-1">
-          <Plus size={16} /> Pasang Penawaran
+          <Plus size={16} /> Saya Butuh Tenaga Kerja/Jasa
         </Link>
       </div>
       <p className="text-xs text-ink/40 -mt-3">
@@ -198,9 +198,9 @@ export default async function EmployerDashboard() {
       {/* 2) Mencari Kerja Saya (posted_by_role = worker)                 */}
       {/* ------------------------------------------------------------- */}
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Mencari Kerja Saya</h2>
+        <h2 className="font-display text-lg font-semibold">Saya Butuh Pekerjaan (Penerima Upah)</h2>
         <Link href="/dashboard/worker/post-listing" className="btn-secondary !px-4 !py-2 text-sm gap-1">
-          <Plus size={16} /> Saya Butuh Pekerjaan
+          <Plus size={16} /> Posting Layanan Jasa Saya
         </Link>
       </div>
 
