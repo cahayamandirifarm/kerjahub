@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DISPUTE_STATUS_LABEL, DisputeStatus } from "@/lib/types";
-import { MessageSquare, Clock } from "lucide-react";
+import { MessageSquare, Clock, ShieldCheck, XCircle } from "lucide-react";
 import clsx from "clsx";
 
 const TABS: { key: DisputeStatus; label: string }[] = [
@@ -72,6 +72,20 @@ export default function AdminDisputesPage() {
     load();
   }
 
+  async function resolveTransaction(id: string, action: "batalkan" | "selesai") {
+    const confirmText =
+      action === "batalkan"
+        ? "Batalkan transaksi ini? Saldo dompet pemberi upah/penjual yang sempat terpotong akan dikembalikan penuh. Semua orang akan keluar dari chat sengketa ini."
+        : "Tandai transaksi ini SELESAI? Dana akan dicairkan ke pekerja/penjual. Semua orang akan keluar dari chat sengketa ini.";
+    if (!confirm(confirmText)) return;
+    const note = prompt("Catatan penyelesaian sengketa (opsional):") || null;
+    setBusyId(id);
+    const { error } = await supabase.rpc("resolve_dispute_transaction", { p_dispute_id: id, p_action: action, p_note: note });
+    setBusyId(null);
+    if (error) alert(error.message);
+    load();
+  }
+
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold mb-1">Dashboard Sengketa Chat</h1>
@@ -125,18 +139,25 @@ export default function AdminDisputesPage() {
                 {(d.status === "menunggu_admin" || d.status === "diproses") && (
                   <>
                     <button
-                      onClick={() => resolve(d.id, "selesai")}
+                      onClick={() => resolveTransaction(d.id, "batalkan")}
                       disabled={busyId === d.id}
-                      className="btn-primary !px-3 !py-1.5 text-xs"
+                      className="!px-3 !py-1.5 text-xs rounded-pill border border-clay text-clay font-semibold flex items-center gap-1"
                     >
-                      Selesai
+                      <XCircle size={13} /> Transaksi Dibatalkan
+                    </button>
+                    <button
+                      onClick={() => resolveTransaction(d.id, "selesai")}
+                      disabled={busyId === d.id}
+                      className="btn-primary !px-3 !py-1.5 text-xs flex items-center gap-1"
+                    >
+                      <ShieldCheck size={13} /> Transaksi Selesai
                     </button>
                     <button
                       onClick={() => resolve(d.id, "ditolak")}
                       disabled={busyId === d.id}
-                      className="!px-3 !py-1.5 text-xs rounded-pill border border-clay text-clay font-semibold"
+                      className="!px-3 !py-1.5 text-xs rounded-pill border border-line text-ink/50 font-semibold"
                     >
-                      Tolak
+                      Tolak Tiket
                     </button>
                   </>
                 )}

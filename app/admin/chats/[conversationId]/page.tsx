@@ -1,16 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CHAT_BUCKET, formatChatTime } from "@/lib/chat-helpers";
 import type { ChatMessage, ChatAttachment, DisputeStatus } from "@/lib/types";
 import { DISPUTE_STATUS_LABEL } from "@/lib/types";
-import { ArrowLeft, Send, FileText, ShieldCheck, Lock } from "lucide-react";
+import { ArrowLeft, Send, FileText, ShieldCheck, XCircle, Lock } from "lucide-react";
 import clsx from "clsx";
 
 export default function AdminChatThreadPage({ params }: { params: { conversationId: string } }) {
   const conversationId = params.conversationId;
   const supabase = createClient();
+  const router = useRouter();
 
   const [adminId, setAdminId] = useState<string | null>(null);
   const [title, setTitle] = useState("Percakapan");
@@ -20,6 +22,7 @@ export default function AdminChatThreadPage({ params }: { params: { conversation
   const [dispute, setDispute] = useState<any | null>(null);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,6 +134,28 @@ export default function AdminChatThreadPage({ params }: { params: { conversation
     if (error) alert(error.message);
   }
 
+  async function resolveTransaction(action: "batalkan" | "selesai") {
+    if (!dispute) return;
+    const confirmText =
+      action === "batalkan"
+        ? "Batalkan transaksi ini? Saldo dompet pemberi upah/penjual yang sempat terpotong akan dikembalikan penuh. Semua orang (termasuk kamu) akan keluar dari chat ini."
+        : "Tandai transaksi ini SELESAI? Dana akan dicairkan ke pekerja/penjual. Semua orang (termasuk kamu) akan keluar dari chat ini.";
+    if (!confirm(confirmText)) return;
+    const note = prompt("Catatan penyelesaian sengketa (opsional):") || null;
+    setResolving(true);
+    const { error } = await supabase.rpc("resolve_dispute_transaction", {
+      p_dispute_id: dispute.id,
+      p_action: action,
+      p_note: note
+    });
+    setResolving(false);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    router.push("/admin/disputes");
+  }
+
   async function signedUrl(path: string) {
     const { data } = await supabase.storage.from(CHAT_BUCKET).createSignedUrl(path, 3600);
     return data?.signedUrl || null;
@@ -159,14 +184,29 @@ export default function AdminChatThreadPage({ params }: { params: { conversation
       </div>
 
       {dispute && (dispute.status === "menunggu_admin" || dispute.status === "diproses") && (
-        <div className="card p-3 mb-3 flex items-center justify-between gap-3 bg-clay/5 border-clay/20">
+        <div className="card p-3 mb-3 flex items-center justify-between gap-3 bg-clay/5 border-clay/20 flex-wrap">
           <p className="text-xs text-clay font-semibold">Tiket sengketa aktif — selesaikan setelah mediasi selesai.</p>
-          <div className="flex gap-2 shrink-0">
-            <button onClick={() => resolve("selesai")} className="btn-primary !px-3 !py-1.5 text-xs gap-1">
-              <ShieldCheck size={13} /> Tandai Selesai
+          <div className="flex gap-2 shrink-0 flex-wrap">
+            <button
+              onClick={() => resolveTransaction("batalkan")}
+              disabled={resolving}
+              className="!px-3 !py-1.5 text-xs rounded-pill border border-clay text-clay font-semibold flex items-center gap-1 disabled:opacity-50"
+            >
+              <XCircle size={13} /> Transaksi Dibatalkan
             </button>
-            <button onClick={() => resolve("ditolak")} className="!px-3 !py-1.5 text-xs rounded-pill border border-clay text-clay font-semibold">
-              Tolak
+            <button
+              onClick={() => resolveTransaction("selesai")}
+              disabled={resolving}
+              className="btn-primary !px-3 !py-1.5 text-xs gap-1 disabled:opacity-50"
+            >
+              <ShieldCheck size={13} /> Transaksi Selesai
+            </button>
+            <button
+              onClick={() => resolve("ditolak")}
+              disabled={resolving}
+              className="!px-3 !py-1.5 text-xs rounded-pill border border-line text-ink/50 font-semibold disabled:opacity-50"
+            >
+              Tolak Tiket
             </button>
           </div>
         </div>
