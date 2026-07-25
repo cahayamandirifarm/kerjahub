@@ -68,18 +68,20 @@ function sortByPopularity<T extends { view_count?: number; created_at: string; p
 export const getHomeJobs = unstable_cache(
   async (tipe: "employer" | "worker", kategori?: string) => {
     const supabase = createPublicClient();
-    // profiles!inner (bukan left join biasa) supaya .eq("profiles.kyc_status", ...)
-    // di bawah benar-benar menyaring baris jobs, bukan cuma menyaring field
-    // profiles-nya. Ini pertahanan tambahan di level query di atas RLS
-    // (migration 0062) -- postingan dari user yang belum terverifikasi tidak
-    // ikut diambil sama sekali di feed publik.
+    // PENTING (bugfix 0064): JANGAN pakai profiles!inner + .eq("profiles.kyc_status", ...)
+    // di sini. Client publik (createPublicClient) selalu anonim, dan sub-query
+    // semacam itu ikut tunduk RLS tabel profiles (yang memblokir role anon) --
+    // hasilnya SEMUA job jadi hilang, bukan cuma milik user belum verifikasi
+    // (lihat migration 0064 untuk detail bug-nya). Penyaringan verifikasi
+    // sekarang cukup ditegakkan RLS di tabel jobs itu sendiri (lewat fungsi
+    // security-definer public.is_profile_verified) -- di sini cukup left-join
+    // biasa utk data tampilan (nama, avatar, rating pemilik).
     let query = supabase
       .from("jobs")
-      .select("*, profiles!jobs_employer_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
+      .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
       .eq("stage", "terbuka")
       .eq("is_active", true)
       .eq("posted_by_role", tipe)
-      .eq("profiles.kyc_status", "terverifikasi")
       .order("created_at", { ascending: false })
       .limit(150);
     if (kategori) query = query.eq("category", kategori);
@@ -109,11 +111,12 @@ export const getHomeJobs = unstable_cache(
 export const getMarketplaceListings = unstable_cache(
   async (kategori?: string) => {
     const supabase = createPublicClient();
+    // Lihat catatan bugfix 0064 di getHomeJobs di atas -- alasan yang sama
+    // persis berlaku di sini.
     let query = supabase
       .from("digital_listings")
-      .select("*, profiles!digital_listings_seller_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
+      .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
       .eq("status", "aktif")
-      .eq("profiles.kyc_status", "terverifikasi")
       .order("created_at", { ascending: false })
       .limit(150);
     if (kategori) query = query.eq("category", kategori);
@@ -136,11 +139,11 @@ export const getMarketplaceListings = unstable_cache(
 // /marketplace ketika user mengisi kotak pencarian.
 export async function searchMarketplaceListings(q: string, kategori?: string) {
   const supabase = createPublicClient();
+  // Lihat catatan bugfix 0064 di getHomeJobs -- alasan yang sama persis berlaku di sini.
   let query = supabase
     .from("digital_listings")
-    .select("*, profiles!digital_listings_seller_id_fkey!inner(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count, kyc_status)")
+    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
     .eq("status", "aktif")
-    .eq("profiles.kyc_status", "terverifikasi")
     .ilike("title", `%${q.trim()}%`)
     .order("created_at", { ascending: false })
     .limit(100);
