@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { categoriesForRole } from "@/lib/types";
+import { categoriesForRole, DOCUMENT_SERVICE_CATEGORIES } from "@/lib/types";
 import { revalidateListings } from "@/lib/revalidate-listings";
 import { useAuth } from "@/lib/AuthContext";
 import VerificationRequiredModal from "@/components/VerificationRequiredModal";
@@ -134,6 +134,18 @@ export default function JobForm({ role, jobId, initial }: Props) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  const isDocumentServiceCategory = DOCUMENT_SERVICE_CATEGORIES.includes(form.category);
+
+  // Jasa pengurusan dokumen/perizinan resmi wajib dikerjakan tatap muka --
+  // kalau kategori ini dipilih (baik dari awal maupun diganti belakangan),
+  // paksa is_remote ke false supaya tidak bisa ditandai "bisa online".
+  useEffect(() => {
+    if (isDocumentServiceCategory && form.is_remote) {
+      setForm((f) => ({ ...f, is_remote: false }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.category]);
+
   function useMyLocation() {
     if (!navigator.geolocation) return;
     setLocLoading(true);
@@ -258,6 +270,15 @@ export default function JobForm({ role, jobId, initial }: Props) {
           </select>
         </div>
 
+        {isDocumentServiceCategory && (
+          <div className="rounded-xl bg-clay/10 border border-clay/30 px-3 py-2.5">
+            <p className="text-xs font-bold text-clay uppercase tracking-wide mb-1">Aturan Jasa Pengurusan Dokumen &amp; Perizinan</p>
+            <p className="text-xs text-clay font-semibold leading-relaxed">
+              Dilarang membuat jasa pengurusan dokumen resmi dengan cara ilegal (mis. percaloan/calo, pemalsuan dokumen, atau menyalahi prosedur resmi instansi). Dilarang meminta pengguna menyerahkan akun, PIN, OTP, atau password dalam bentuk apa pun. Segala tindakan ilegal sepenuhnya menjadi tanggung jawab pemosting dan dapat berdampak pidana sesuai hukum yang berlaku.
+            </p>
+          </div>
+        )}
+
         <div>
           <label className="label">{c.descLabel}</label>
           <textarea
@@ -269,10 +290,16 @@ export default function JobForm({ role, jobId, initial }: Props) {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={form.is_remote} onChange={(e) => update("is_remote", e.target.checked)} />
-          Bisa dikerjakan online / remote
-        </label>
+        {isDocumentServiceCategory ? (
+          <p className="text-xs text-ink/45 -mt-1">
+            Jasa pengurusan dokumen &amp; perizinan wajib dikerjakan langsung/tatap muka, tidak tersedia opsi online/remote.
+          </p>
+        ) : (
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={form.is_remote} onChange={(e) => update("is_remote", e.target.checked)} />
+            Bisa dikerjakan online / remote
+          </label>
+        )}
 
         <label className="flex items-start gap-2 text-sm font-medium rounded-xl border border-line bg-paper px-3 py-3">
           <input

@@ -115,7 +115,14 @@ export const JOB_CATEGORIES = [
 // Kategori khusus yang HANYA muncul di sisi "Saya Butuh Pekerjaan (Penerima
 // Upah)" -- yaitu worker yang menawarkan jasa -- tidak muncul di sisi
 // "Saya Butuh Pekerja (Pemberi Upah)" / lowongan employer.
-export const WORKER_ONLY_CATEGORIES = ["Mabar Game", "Joki Game"];
+export const WORKER_ONLY_CATEGORIES = ["Mabar Game", "Joki Game", "Pengurusan Dokumen", "Bantuan Perizinan"];
+
+// Kategori jasa dokumen/perizinan resmi -- WAJIB dikerjakan langsung/tatap
+// muka (butuh kehadiran fisik ke instansi terkait), jadi TIDAK BOLEH
+// ditandai "bisa dikerjakan online/remote" di form posting. Kategori ini
+// juga menampilkan peringatan aturan (larangan cara ilegal & larangan
+// minta akun/PIN/OTP/password) di form posting.
+export const DOCUMENT_SERVICE_CATEGORIES = ["Pengurusan Dokumen", "Bantuan Perizinan"];
 
 // Daftar kategori final sesuai role/tipe posting. "Lainnya" selalu di
 // posisi paling akhir.
