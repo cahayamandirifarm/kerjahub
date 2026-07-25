@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Scale,
   Megaphone,
-  MapPin
+  MapPin,
+  Filter
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 
@@ -39,6 +40,7 @@ const NAV = [
   { href: "/admin/jobs", label: "Postingan Kerja", icon: Briefcase },
   { href: "/admin/marketplace-listings", label: "Listing Marketplace Digital", icon: ShoppingBag },
   { href: "/admin/marketplace-orders", label: "Order Marketplace Digital", icon: ShoppingBag },
+  { href: "/admin/moderation-keywords", label: "Filter Kata Postingan", icon: Filter },
   { href: "/admin/banners", label: "Banner Beranda", icon: ImageIcon },
   { href: "/admin/broadcast", label: "Broadcast Notifikasi", icon: Megaphone },
   { href: "/admin/ratings", label: "Rating & Ulasan", icon: Star },
