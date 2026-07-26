@@ -74,6 +74,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setUnreadCount(count);
   }, [user]);
 
+  // BUG: broadcast admin (& notifikasi lain) sering "sampai" (badge/push
+  // muncul) tapi TIDAK ikut tersimpan di riwayat /notifications, khusus di
+  // PWA mobile -- sementara di desktop (tab biasanya tetap terbuka) selalu
+  // tersimpan. Penyebabnya: satu-satunya jalur yang mengisi cache lokal
+  // sebelumnya HANYA (a) event Realtime INSERT di bawah (butuh tab sedang
+  // terbuka & subscribe TEPAT saat baris itu masih ada, sebelum job
+  // pembersihan menghapusnya -- migration 0072) dan (b) tulis IndexedDB di
+  // dalam event "push" milik service worker (butuh SW sempat jalan sampai
+  // selesai sebelum OS mematikannya -- di mobile jauh lebih sering
+  // terputus karena battery/OS process killing dibanding di desktop).
+  // Kalau device sedang offline/tertutup saat broadcast dikirim, dan app
+  // baru dibuka user beberapa menit kemudian (lewat dari jendela
+  // pembersihan), dua-duanya sudah lewat -- riwayatnya hilang permanen di
+  // perangkat itu, walau baris itu sempat ada di server sebentar.
+  //
+  // FIX: begitu app dibuka, "tangkap sisa" baris yang masih ada di server
+  // (belum sempat dihapus job pembersihan) lewat query biasa -- bukan cuma
+  // menunggu event Realtime baru -- lalu simpan ke cache lokal. ini
+  // melengkapi (bukan menggantikan) jalur Realtime & push di atas.
+  const reconcileFromServer = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data: rows } = await supabase
+        .from("notifications")
+        .select("id, title, body, link, category, is_read, created_at")
+        .eq("profile_id", user.id);
+      if (rows?.length) {
+        await Promise.all(rows.map((row) => cacheAddNotification({ ...(row as NotifRow), profile_id: user.id })));
+      }
+    } catch {
+      // gagal reconcile tidak boleh mengganggu alur normal (realtime/push
+      // tetap jalan seperti biasa)
+    }
+  }, [user, supabase]);
+
   useEffect(() => {
     // PENTING: sebelumnya baris ini setUnreadCount(0) begitu user logout --
     // efek lain di bawah (yang sinkronkan badge ikon app dari unreadCount)
@@ -85,7 +120,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // nge-refresh count -- angka unreadCount (dan badge ikon-nya) dibiarkan
     // apa adanya sampai ada user login lagi (baru di-refresh ulang di bawah).
     if (!user) return;
-    loadUnread();
+
+    // Reconcile dulu (tangkap baris yang masih ada di server tapi belum
+    // sempat masuk cache lokal perangkat ini), baru hitung unread count
+    // dari cache supaya angkanya sudah termasuk hasil reconcile tsb.
+    (async () => {
+      await reconcileFromServer();
+      await loadUnread();
+    })();
 
     const channel = supabase
       .channel(`notif-${user.id}`)
