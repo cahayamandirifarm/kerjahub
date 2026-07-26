@@ -58,7 +58,7 @@ export default function JobCard({ job }: { job: Job }) {
               <Star size={12} className="text-gold-dark fill-gold-dark" />
               {poster.rating_count > 0 ? poster.rating_avg.toFixed(1) : "Baru"} · {poster.full_name}
             </span>
-            <span className="mt-1 block w-6 h-6 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-semibold text-turquoise-dark">
+            <span className="mt-1 block w-12 h-12 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-base font-semibold text-turquoise-dark">
               {poster.avatar_url ? (
                 <img src={poster.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (

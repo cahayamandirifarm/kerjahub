@@ -240,7 +240,7 @@ export default function NearbyJobsSection({
                       <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
                       {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
                     </div>
-                    <span className="mt-1 block w-6 h-6 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-semibold text-turquoise-dark">
+                    <span className="mt-1 block w-12 h-12 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-base font-semibold text-turquoise-dark">
                       {item.avatar_url ? (
                         <img src={item.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
