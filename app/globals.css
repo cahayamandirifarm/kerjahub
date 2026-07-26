@@ -6,10 +6,29 @@
   color-scheme: light;
 }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 body {
   background-color: #F7FCFD;
   color: #173042;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  position: relative;
+  overscroll-behavior-x: none;
 }
+
+/* Jaga-jaga: kalau ada anak elemen manapun yang lebarnya "bocor" melebihi
+   lebar layar (padding/margin negatif/badge panjang dsb), ini mencegah
+   itu bikin seluruh halaman bisa digeser kiri-kanan seperti di web biasa
+   -- supaya terasa seperti aplikasi mobile, bukan halaman web. */
+* {
+  min-width: 0;
+}
+
 
 .badge-stage {
   @apply inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-semibold;
