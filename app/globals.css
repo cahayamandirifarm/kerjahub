@@ -19,6 +19,20 @@ body {
   max-width: 100vw;
   position: relative;
   overscroll-behavior-x: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Tetap izinkan seleksi teks & menu tap-tahan di elemen input/isian --
+   supaya user tetap bisa select/copy-paste teks yang mereka ketik sendiri
+   (nomor rekening, alamat, dsb), cuma teks UI/konten yang dikunci. */
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Jaga-jaga: kalau ada anak elemen manapun yang lebarnya "bocor" melebihi
