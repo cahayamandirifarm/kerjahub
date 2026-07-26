@@ -68,24 +68,17 @@ function sortByPopularity<T extends { view_count?: number; created_at: string; p
 export const getHomeJobs = unstable_cache(
   async (tipe: "employer" | "worker", kategori?: string) => {
     const supabase = createPublicClient();
-    // PENTING (bugfix 0064): JANGAN pakai profiles!inner + .eq("profiles.kyc_status", ...)
-    // di sini. Client publik (createPublicClient) selalu anonim, dan sub-query
-    // semacam itu ikut tunduk RLS tabel profiles (yang memblokir role anon) --
-    // hasilnya SEMUA job jadi hilang, bukan cuma milik user belum verifikasi
-    // (lihat migration 0064 untuk detail bug-nya). Penyaringan verifikasi
-    // sekarang cukup ditegakkan RLS di tabel jobs itu sendiri (lewat fungsi
-    // security-definer public.is_profile_verified) -- di sini cukup left-join
-    // biasa utk data tampilan (nama, avatar, rating pemilik).
-    let query = supabase
-      .from("jobs")
-      .select("*, profiles!jobs_employer_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
-      .eq("stage", "terbuka")
-      .eq("is_active", true)
-      .eq("posted_by_role", tipe)
-      .order("created_at", { ascending: false })
-      .limit(150);
-    if (kategori) query = query.eq("category", kategori);
-    const { data, error } = await query;
+    // PENTING (bugfix 0068): dulu di sini pakai .from("jobs").select("*, profiles!...(...)")
+    // -- baris job-nya sendiri sudah benar tampil (RLS jobs sudah oke sejak
+    // 0064/0067), TAPI field job.profiles SELALU null utk akses publik,
+    // karena embed relasi PostgREST ke `profiles` adalah query terpisah yang
+    // tunduk RLS tabel profiles sendiri (cuma boleh dibaca role
+    // "authenticated", client publik di sini SELALU anon). Makanya foto
+    // profil/badge rating tidak pernah tampil di beranda walau job-nya
+    // muncul normal. RPC get_home_jobs (security definer, lihat migration
+    // 0068) join ke profiles DI DALAM function-nya sendiri (bypass RLS utk
+    // itu), jadi field profiles-nya benar-benar terisi.
+    const { data, error } = await supabase.rpc("get_home_jobs", { p_tipe: tipe, p_limit: 150 });
     // PENTING: jangan telan error di sini. Kalau query gagal (mis. env var
     // Supabase belum ke-set saat deploy baru, RLS berubah, koneksi putus
     // sesaat) dan kita cuma fallback ke `data ?? []`, unstable_cache akan
@@ -95,7 +88,8 @@ export const getHomeJobs = unstable_cache(
     // menyimpan hasil gagal ini, jadi request berikutnya akan coba query
     // lagi (dan begitu berhasil, baru di-cache).
     if (error) throw error;
-    const ranked = sortByPopularity(data ?? []);
+    const rows = (kategori ? (data ?? []).filter((j: any) => j.category === kategori) : data) ?? [];
+    const ranked = sortByPopularity(rows);
     const deduped = dedupeByOwnerAndTitle(ranked, (job) => job.employer_id);
     return deduped.slice(0, 100);
   },
@@ -111,20 +105,15 @@ export const getHomeJobs = unstable_cache(
 export const getMarketplaceListings = unstable_cache(
   async (kategori?: string) => {
     const supabase = createPublicClient();
-    // Lihat catatan bugfix 0064 di getHomeJobs di atas -- alasan yang sama
-    // persis berlaku di sini.
-    let query = supabase
-      .from("digital_listings")
-      .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
-      .eq("status", "aktif")
-      .order("created_at", { ascending: false })
-      .limit(150);
-    if (kategori) query = query.eq("category", kategori);
-    const { data, error } = await query;
+    // Lihat catatan bugfix 0068 di getHomeJobs di atas -- alasan yang sama
+    // persis berlaku di sini (seller/rating tidak pernah tampil di grid
+    // marketplace publik tanpa RPC ini).
+    const { data, error } = await supabase.rpc("get_marketplace_listings", { p_limit: 150 });
     // Sama seperti getHomeJobs -- jangan cache hasil kosong yang sebenarnya
     // berasal dari error, bukan dari memang belum ada listing.
     if (error) throw error;
-    const ranked = sortByPopularity(data ?? []);
+    const rows = (kategori ? (data ?? []).filter((l: any) => l.category === kategori) : data) ?? [];
+    const ranked = sortByPopularity(rows);
     const deduped = dedupeByOwnerAndTitle(ranked, (item) => item.seller_id);
     return deduped.slice(0, 100);
   },
@@ -139,18 +128,11 @@ export const getMarketplaceListings = unstable_cache(
 // /marketplace ketika user mengisi kotak pencarian.
 export async function searchMarketplaceListings(q: string, kategori?: string) {
   const supabase = createPublicClient();
-  // Lihat catatan bugfix 0064 di getHomeJobs -- alasan yang sama persis berlaku di sini.
-  let query = supabase
-    .from("digital_listings")
-    .select("*, profiles!digital_listings_seller_id_fkey(id, full_name, avatar_url, rating_avg, rating_count, completed_jobs_count)")
-    .eq("status", "aktif")
-    .ilike("title", `%${q.trim()}%`)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (kategori) query = query.eq("category", kategori);
-  const { data, error } = await query;
+  // Lihat catatan bugfix 0068 di getHomeJobs -- alasan yang sama persis berlaku di sini.
+  const { data, error } = await supabase.rpc("get_marketplace_listings", { p_search: q.trim(), p_limit: 100 });
   if (error) throw error;
-  return data ?? [];
+  const rows = kategori ? (data ?? []).filter((l: any) => l.category === kategori) : data;
+  return rows ?? [];
 }
 
 // Banner promosi aktif -- cache 24 jam.
