@@ -8,6 +8,7 @@ import ApplyButton from "./ApplyButton";
 import ChatInquiryButton from "@/components/ChatInquiryButton";
 import WhatsAppInquiryButton from "@/components/WhatsAppInquiryButton";
 import ViewTracker from "@/components/ViewTracker";
+import ShareButton from "@/components/ShareButton";
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -166,6 +167,11 @@ export default async function JobDetailPage({ params }: { params: { jobid: strin
           ) : (
             <ApplyButton jobId={job.id} jobStage={job.stage} ownerId={job.employer_id} isWorkerListing={isWorkerListing} />
           )}
+          <ShareButton
+            path={`/jobs/${job.id}`}
+            title={job.title}
+            text={`Lihat postingan "${job.title}" di KerjaHub`}
+          />
         </div>
       </div>
     </div>

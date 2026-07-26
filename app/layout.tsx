@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { NotificationProvider } from "@/lib/NotificationContext";
@@ -17,6 +18,7 @@ import FinishPopupOverlay from "@/components/FinishPopupOverlay";
 import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
 import EnableNotificationsPrompt from "@/components/EnableNotificationsPrompt";
+import ReferralCapture from "@/components/ReferralCapture";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -83,6 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <NegoOfferPopupProvider>
                   <CompletionPopupProvider>
                     <FinishPopupProvider>
+                      <Suspense fallback={null}>
+                        <ReferralCapture />
+                      </Suspense>
                       <OnlineStatus />
                       <PWAInstall />
                       <EnableNotificationsPrompt />

@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usernameToEmail, isValidUsername, isValidPhone } from "@/lib/auth-helpers";
+import { getSavedReferralCode } from "@/components/ReferralCapture";
 import Link from "next/link";
 import { UserX } from "lucide-react";
 
@@ -35,7 +36,16 @@ function RegisterForm() {
 
   useEffect(() => {
     const ref = searchParams.get("ref");
-    if (ref) setReferralCode(ref.toUpperCase());
+    if (ref) {
+      setReferralCode(ref.toUpperCase());
+    } else {
+      // Nggak ada ?ref= di URL saat ini -- kemungkinan orangnya sebelumnya
+      // buka link share postingan (yang bawa ?ref=) tapi baru daftar
+      // belakangan lewat jalur lain (mis. tombol "Daftar" di navbar).
+      // Ambil kode yang sempat tersimpan lewat ReferralCapture, kalau ada.
+      const saved = getSavedReferralCode();
+      if (saved) setReferralCode(saved);
+    }
 
     const supabase = createClient();
     supabase
