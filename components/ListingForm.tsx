@@ -280,6 +280,7 @@ export default function ListingForm({ listingId, initial }: Props) {
             )}
           </div>
           {error && <p className="text-sm text-clay">{error}</p>}
+          {moderationError && <p className="text-sm text-clay font-semibold">⚠ {moderationError}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? (isEdit ? "Menyimpan..." : "Memposting...") : isEdit ? "Simpan Perubahan" : "Posting Produk"}
           </button>
