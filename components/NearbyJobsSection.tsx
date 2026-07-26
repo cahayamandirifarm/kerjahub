@@ -235,12 +235,12 @@ export default function NearbyJobsSection({
                   <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">
                     {item.job_title}
                   </h3>
-                  <div className="mt-0.5">
-                    <div className="flex items-center gap-1.5">
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
                       {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
                     </div>
-                    <span className="mt-1 block w-12 h-12 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-base font-semibold text-turquoise-dark">
+                    <span className="w-9 h-9 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-sm font-semibold text-turquoise-dark">
                       {item.avatar_url ? (
                         <img src={item.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (

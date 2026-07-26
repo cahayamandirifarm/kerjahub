@@ -53,12 +53,12 @@ export default function JobCard({ job }: { job: Job }) {
       </div>
       {poster && (
         <div className="mt-2 flex flex-wrap items-start gap-x-3 gap-y-1 text-xs text-ink/50">
-          <div className="max-w-[180px]">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="inline-flex items-center gap-1 truncate">
               <Star size={12} className="text-gold-dark fill-gold-dark" />
               {poster.rating_count > 0 ? poster.rating_avg.toFixed(1) : "Baru"} · {poster.full_name}
             </span>
-            <span className="mt-1 block w-12 h-12 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-base font-semibold text-turquoise-dark">
+            <span className="w-9 h-9 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-sm font-semibold text-turquoise-dark">
               {poster.avatar_url ? (
                 <img src={poster.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
