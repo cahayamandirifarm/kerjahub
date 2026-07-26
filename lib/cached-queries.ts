@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
+import type { Job, DigitalListing } from "@/lib/types";
 
 // Menyamakan judul untuk deteksi "produk/jasa yang sama atau mirip" dari
 // akun yang sama -- huruf kecil, tanda baca & spasi ganda dibuang, supaya
@@ -88,7 +89,14 @@ export const getHomeJobs = unstable_cache(
     // menyimpan hasil gagal ini, jadi request berikutnya akan coba query
     // lagi (dan begitu berhasil, baru di-cache).
     if (error) throw error;
-    const rows = (kategori ? (data ?? []).filter((j: any) => j.category === kategori) : data) ?? [];
+    // RPC ini balikin `setof jsonb` -- client Supabase publik di sini tidak
+    // di-generic-kan ke tipe Database, jadi TypeScript tidak tahu bentuk
+    // hasilnya (bikin build gagal type-check di dedupeByOwnerAndTitle yang
+    // butuh field `title`). Bentuk JSON-nya sudah pasti sama dengan `Job`
+    // (lihat migration 0084 -- to_jsonb(j) + field profiles bersarang),
+    // jadi aman di-cast eksplisit ke Job[] di sini.
+    const allRows = (data ?? []) as unknown as Job[];
+    const rows = kategori ? allRows.filter((j) => j.category === kategori) : allRows;
     const ranked = sortByPopularity(rows);
     const deduped = dedupeByOwnerAndTitle(ranked, (job) => job.employer_id);
     return deduped.slice(0, 100);
@@ -112,7 +120,10 @@ export const getMarketplaceListings = unstable_cache(
     // Sama seperti getHomeJobs -- jangan cache hasil kosong yang sebenarnya
     // berasal dari error, bukan dari memang belum ada listing.
     if (error) throw error;
-    const rows = (kategori ? (data ?? []).filter((l: any) => l.category === kategori) : data) ?? [];
+    // Sama seperti getHomeJobs -- cast eksplisit karena RPC balikin jsonb
+    // dan client publik tidak di-generic-kan ke tipe Database.
+    const allRows = (data ?? []) as unknown as DigitalListing[];
+    const rows = kategori ? allRows.filter((l) => l.category === kategori) : allRows;
     const ranked = sortByPopularity(rows);
     const deduped = dedupeByOwnerAndTitle(ranked, (item) => item.seller_id);
     return deduped.slice(0, 100);
@@ -131,8 +142,9 @@ export async function searchMarketplaceListings(q: string, kategori?: string) {
   // Lihat catatan bugfix 0068 di getHomeJobs -- alasan yang sama persis berlaku di sini.
   const { data, error } = await supabase.rpc("get_marketplace_listings", { p_search: q.trim(), p_limit: 100 });
   if (error) throw error;
-  const rows = kategori ? (data ?? []).filter((l: any) => l.category === kategori) : data;
-  return rows ?? [];
+  const allRows = (data ?? []) as unknown as DigitalListing[];
+  const rows = kategori ? allRows.filter((l) => l.category === kategori) : allRows;
+  return rows;
 }
 
 // Banner promosi aktif -- cache 24 jam.
