@@ -7,8 +7,15 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { formatChatTime, initials } from "@/lib/chat-helpers";
 import type { ConversationListItem } from "@/lib/types";
-import { Search, MessageCircle, Archive, AlertTriangle, Briefcase, ShoppingBag, Trash2 } from "lucide-react";
+import { Search, MessageCircle, Archive, AlertTriangle, Briefcase, ShoppingBag, Trash2, Headset } from "lucide-react";
 import clsx from "clsx";
+
+interface BantuanSummary {
+  conversation_id: string;
+  last_message: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+}
 
 export default function ChatListPage() {
   const router = useRouter();
@@ -20,6 +27,26 @@ export default function ChatListPage() {
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<ConversationListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [bantuan, setBantuan] = useState<BantuanSummary | null>(null);
+  const [openingBantuan, setOpeningBantuan] = useState(false);
+
+  const loadBantuan = useCallback(async () => {
+    const { data } = await supabase.rpc("get_my_bantuan_summary");
+    const row = (data as BantuanSummary[] | null)?.[0];
+    setBantuan(row || null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function openBantuan() {
+    if (openingBantuan) return;
+    if (bantuan?.conversation_id) {
+      router.push(`/chat/${bantuan.conversation_id}`);
+      return;
+    }
+    setOpeningBantuan(true);
+    const { data, error } = await supabase.rpc("start_bantuan_chat");
+    setOpeningBantuan(false);
+    if (!error && data) router.push(`/chat/${data}`);
+  }
 
   // Simpan tab & query terbaru di ref supaya handler realtime/polling di
   // bawah selalu baca nilai TERKINI -- sebelumnya effect channel realtime
@@ -78,9 +105,17 @@ export default function ChatListPage() {
 
   useEffect(() => {
     if (!userId) return;
+    loadBantuan();
+  }, [userId, loadBantuan]);
+
+  useEffect(() => {
+    if (!userId) return;
     const channel = supabase
       .channel(`chat-list-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, reloadCurrent)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        reloadCurrent();
+        loadBantuan();
+      })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_members" }, reloadCurrent)
       .subscribe();
 
@@ -93,6 +128,7 @@ export default function ChatListPage() {
     const pollInterval = setInterval(() => {
       if (document.hidden) return;
       reloadCurrent();
+      loadBantuan();
     }, 5000);
 
     return () => {
@@ -151,6 +187,30 @@ export default function ChatListPage() {
             <Archive size={14} /> Arsip
           </button>
         </div>
+
+        {tab === "aktif" && (
+          <button
+            type="button"
+            onClick={openBantuan}
+            disabled={openingBantuan}
+            className="card p-3.5 flex items-center gap-3 w-full text-left mb-3 border-turquoise/40 bg-turquoise/5 hover:border-turquoise transition-colors disabled:opacity-70"
+          >
+            <div className="w-12 h-12 rounded-full bg-turquoise flex items-center justify-center text-white shrink-0">
+              <Headset size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-ink truncate">Chat Bantuan Admin</p>
+              <p className={clsx("text-sm truncate", bantuan?.unread_count ? "text-ink font-semibold" : "text-ink/50")}>
+                {openingBantuan ? "Membuka..." : bantuan?.last_message || "Kendala akun, transaksi, atau lainnya? Tanya di sini"}
+              </p>
+            </div>
+            {!!bantuan?.unread_count && (
+              <span className="bg-clay text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shrink-0">
+                {bantuan.unread_count > 9 ? "9+" : bantuan.unread_count}
+              </span>
+            )}
+          </button>
+        )}
 
         <div className="space-y-2">
           {loading && <div className="card p-8 text-center text-ink/40 text-sm">Memuat...</div>}

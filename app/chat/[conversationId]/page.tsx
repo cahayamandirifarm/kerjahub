@@ -53,7 +53,7 @@ interface OtherProfile {
 
 interface ConversationInfo {
   id: string;
-  source_type: "job" | "marketplace" | "listing";
+  source_type: "job" | "marketplace" | "listing" | "bantuan";
   title: string;
   is_locked: boolean;
   is_dispute: boolean;
@@ -194,6 +194,8 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
             .single();
           if (data?.title) title = data.title;
           contextUrl = `/marketplace/${convRow.listing_id}`;
+        } else if (convRow.source_type === "bantuan") {
+          title = "Chat Bantuan Admin";
         }
       } catch (titleErr) {
         console.error("Gagal memuat judul percakapan:", titleErr);
@@ -221,7 +223,19 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
       const me = members?.find((m: any) => m.profile_id === user.id);
       const otherMember = members?.find((m: any) => m.profile_id !== user.id);
       setIsArchived(!!me?.is_archived);
-      if (otherMember?.profiles) setOther(otherMember.profiles as any as OtherProfile);
+      if (convRow.source_type === "bantuan") {
+        // Chat bantuan: siapa pun admin yang membalas, tampilkan identitas
+        // tetap "Admin KerjaHub" (bukan nama admin perorangan) supaya
+        // konsisten kalau beda admin yang menangani di kesempatan berbeda.
+        setOther({
+          id: (otherMember?.profiles as any)?.id || "",
+          full_name: "Admin KerjaHub",
+          avatar_url: null,
+          is_online: false
+        } as any as OtherProfile);
+      } else if (otherMember?.profiles) {
+        setOther(otherMember.profiles as any as OtherProfile);
+      }
 
       const otherId = (otherMember?.profiles as any)?.id;
       otherIdRef.current = otherId || null;
@@ -1012,7 +1026,13 @@ export default function ChatDetailPage({ params }: { params: { conversationId: s
           </button>
           <input
             className="input flex-1 !py-3"
-            placeholder={isBlocked ? "Tidak bisa mengirim pesan" : "Tulis pesan... (ketik /tanyaadmin untuk bantuan admin)"}
+            placeholder={
+              isBlocked
+                ? "Tidak bisa mengirim pesan"
+                : conv.source_type === "bantuan"
+                  ? "Tulis kendala kamu..."
+                  : "Tulis pesan... (ketik /tanyaadmin untuk bantuan admin)"
+            }
             value={text}
             disabled={isBlocked}
             onChange={(e) => handleTextChange(e.target.value)}
@@ -1079,6 +1099,18 @@ function MessageBubble({
 
   if (message.is_system) {
     const isDealMessage = !!message.nego_offer_id && message.content.startsWith("Harga disepakati");
+    const isTemplateMessage = message.content.length > 90 || message.content.includes("\n");
+
+    if (isTemplateMessage) {
+      return (
+        <div className="flex flex-col items-center py-1.5 gap-1.5">
+          <div className="max-w-[92%] w-full bg-turquoise/5 border border-turquoise/20 rounded-2xl px-4 py-3 text-xs text-ink/70 whitespace-pre-line leading-relaxed">
+            {message.content}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center py-1.5 gap-1.5">
         <span className="text-[11px] text-ink/45 bg-line/50 px-3 py-1.5 rounded-pill text-center max-w-[85%]">{message.content}</span>

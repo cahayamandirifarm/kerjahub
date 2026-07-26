@@ -34,13 +34,13 @@ export default function AdminChatThreadPage({ params }: { params: { conversation
 
       const { data: convRow } = await supabase
         .from("conversations")
-        .select("id, is_locked, job:jobs(title), order:digital_orders(listing:digital_listings(title))")
+        .select("id, source_type, is_locked, job:jobs(title), order:digital_orders(listing:digital_listings(title))")
         .eq("id", conversationId)
         .single();
       if (convRow) {
         const jobRel = convRow.job as any;
         const orderRel = convRow.order as any;
-        setTitle(jobRel?.title || orderRel?.listing?.title || "Percakapan");
+        setTitle(convRow.source_type === "bantuan" ? "Chat Bantuan" : jobRel?.title || orderRel?.listing?.title || "Percakapan");
         setIsLocked(convRow.is_locked);
       }
 
