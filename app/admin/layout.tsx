@@ -23,6 +23,7 @@ import {
   Filter
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
+import BantuanFloatingBubble from "@/components/admin/BantuanFloatingBubble";
 
 const NAV = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard },
@@ -91,6 +92,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">{children}</main>
       </div>
+      <BantuanFloatingBubble />
     </div>
   );
 }
