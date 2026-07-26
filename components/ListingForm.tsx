@@ -7,6 +7,7 @@ import { DIGITAL_CATEGORIES } from "@/lib/types";
 import { revalidateListings } from "@/lib/revalidate-listings";
 import { useAuth } from "@/lib/AuthContext";
 import VerificationRequiredModal from "@/components/VerificationRequiredModal";
+import ModerationRejectedModal from "@/components/ModerationRejectedModal";
 import { ShieldAlert } from "lucide-react";
 
 type InitialListing = {
@@ -51,6 +52,7 @@ export default function ListingForm({ listingId, initial }: Props) {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [moderationError, setModerationError] = useState<string | null>(null);
   const existingImages = [initial?.cover_image, ...(initial?.gallery_images ?? [])].filter(Boolean) as string[];
 
   const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per foto
@@ -144,8 +146,13 @@ export default function ListingForm({ listingId, initial }: Props) {
       if (updateError) {
         // errcode P0001 = exception dari trigger kita sendiri (mis. filter
         // moderasi konten) -- pesannya sudah jelas untuk user, tampilkan
-        // apa adanya; selain itu tetap pakai pesan generik.
-        setError(updateError.code === "P0001" ? updateError.message : "Gagal menyimpan perubahan.");
+        // sebagai popup biar tidak kelewat; selain itu tetap pakai pesan
+        // generik inline seperti biasa.
+        if (updateError.code === "P0001") {
+          setModerationError(updateError.message);
+        } else {
+          setError("Gagal menyimpan perubahan.");
+        }
         return;
       }
       revalidateListings();
@@ -155,7 +162,11 @@ export default function ListingForm({ listingId, initial }: Props) {
       const { error: insertError } = await supabase.from("digital_listings").insert({ seller_id: user.id, ...payload });
       setLoading(false);
       if (insertError) {
-        setError(insertError.code === "P0001" ? insertError.message : "Gagal memposting produk.");
+        if (insertError.code === "P0001") {
+          setModerationError(insertError.message);
+        } else {
+          setError("Gagal memposting produk.");
+        }
         return;
       }
       revalidateListings();
@@ -176,6 +187,7 @@ export default function ListingForm({ listingId, initial }: Props) {
           kycStatus={profile?.kyc_status}
           onClose={() => setShowVerifyModal(false)}
         />
+        <ModerationRejectedModal open={!!moderationError} message={moderationError || ""} onClose={() => setModerationError(null)} />
 
         {blockPosting ? (
           <div className="card p-8 text-center">

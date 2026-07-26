@@ -7,6 +7,7 @@ import { categoriesForRole, DOCUMENT_SERVICE_CATEGORIES } from "@/lib/types";
 import { revalidateListings } from "@/lib/revalidate-listings";
 import { useAuth } from "@/lib/AuthContext";
 import VerificationRequiredModal from "@/components/VerificationRequiredModal";
+import ModerationRejectedModal from "@/components/ModerationRejectedModal";
 import { ShieldAlert } from "lucide-react";
 
 type Role = "employer" | "worker";
@@ -129,6 +130,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
   const [locLoading, setLocLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [moderationError, setModerationError] = useState<string | null>(null);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -198,9 +200,13 @@ export default function JobForm({ role, jobId, initial }: Props) {
       if (updateError) {
         // errcode P0001 = exception yang sengaja dilempar trigger kita sendiri
         // (mis. filter moderasi konten) -- pesannya sudah jelas & untuk user,
-        // jadi tampilkan apa adanya. Selain itu (error tak terduga/teknis)
-        // tetap pakai pesan generik supaya tidak membingungkan.
-        setError(updateError.code === "P0001" ? updateError.message : c.failEdit);
+        // jadi tampilkan sebagai popup biar tidak kelewat. Selain itu (error
+        // tak terduga/teknis) tetap pakai pesan generik inline seperti biasa.
+        if (updateError.code === "P0001") {
+          setModerationError(updateError.message);
+        } else {
+          setError(c.failEdit);
+        }
         return;
       }
       revalidateListings();
@@ -216,7 +222,11 @@ export default function JobForm({ role, jobId, initial }: Props) {
       });
       setLoading(false);
       if (insertError) {
-        setError(insertError.code === "P0001" ? insertError.message : c.failCreate);
+        if (insertError.code === "P0001") {
+          setModerationError(insertError.message);
+        } else {
+          setError(c.failCreate);
+        }
         return;
       }
       revalidateListings();
@@ -234,6 +244,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         kycStatus={profile?.kyc_status}
         onClose={() => setShowVerifyModal(false)}
       />
+      <ModerationRejectedModal open={!!moderationError} message={moderationError || ""} onClose={() => setModerationError(null)} />
 
       {blockPosting ? (
         <div className="card p-8 text-center">
