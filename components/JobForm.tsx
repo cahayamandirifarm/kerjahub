@@ -205,6 +205,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         if (updateError.code === "P0001") {
           setModerationError(updateError.message);
         } else {
+          console.error("[JobForm] update error (bukan P0001):", updateError);
           setError(c.failEdit);
         }
         return;
@@ -225,6 +226,7 @@ export default function JobForm({ role, jobId, initial }: Props) {
         if (insertError.code === "P0001") {
           setModerationError(insertError.message);
         } else {
+          console.error("[JobForm] insert error (bukan P0001):", insertError);
           setError(c.failCreate);
         }
         return;

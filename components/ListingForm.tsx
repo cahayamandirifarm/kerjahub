@@ -151,6 +151,7 @@ export default function ListingForm({ listingId, initial }: Props) {
         if (updateError.code === "P0001") {
           setModerationError(updateError.message);
         } else {
+          console.error("[ListingForm] update error (bukan P0001):", updateError);
           setError("Gagal menyimpan perubahan.");
         }
         return;
@@ -165,6 +166,7 @@ export default function ListingForm({ listingId, initial }: Props) {
         if (insertError.code === "P0001") {
           setModerationError(insertError.message);
         } else {
+          console.error("[ListingForm] insert error (bukan P0001):", insertError);
           setError("Gagal memposting produk.");
         }
         return;
