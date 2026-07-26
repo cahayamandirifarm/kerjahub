@@ -225,59 +225,59 @@ export default function NearbyJobsSection({
             <Link
               key={`worker-${item.job_id}`}
               href={`/jobs/${item.job_id}`}
-              className="card block p-4 hover:-translate-y-0.5 transition"
+              className="card flex items-center gap-3 p-4 hover:-translate-y-0.5 transition"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-turquoise uppercase">
-                    <User size={12} /> {item.job_category}
-                  </span>
-                  <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">
-                    {item.job_title}
-                  </h3>
-                  <div className="mt-1 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
-                      {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
-                    </div>
-                    <span className="w-9 h-9 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-sm font-semibold text-turquoise-dark">
-                      {item.avatar_url ? (
-                        <img src={item.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        item.full_name?.[0]?.toUpperCase() ?? "?"
-                      )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-turquoise uppercase">
+                      <User size={12} /> {item.job_category}
                     </span>
+                    <h3 className="font-display text-base font-semibold text-ink mt-0.5 line-clamp-2">
+                      {item.job_title}
+                    </h3>
                   </div>
+                  <span className="badge-stage stage-terbuka shrink-0">Pekerja</span>
                 </div>
-                <span className="badge-stage stage-terbuka shrink-0">Pekerja</span>
-              </div>
-              <div className="mt-2 flex items-center gap-3 text-sm text-ink/60">
-                <span className="inline-flex items-center gap-1 font-semibold text-turquoise">
-                  <MapPin size={13} /> {formatDistance(item.distance_m, unit)}
-                </span>
-                {item.district && <span>{item.district}</span>}
-              </div>
-              <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
-                {item.job_is_nego ? "Nego" : formatRupiah(item.job_price)}
-              </p>
-              {item.skills && item.skills.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {item.skills.map((s) => (
-                    <span key={s} className="text-xs bg-turquoise-light text-turquoise-dark rounded-full px-2 py-1">
-                      {s}
-                    </span>
-                  ))}
+                <div className="mt-1 flex items-center gap-1.5">
+                  <p className="text-xs text-ink/50 line-clamp-1">oleh {item.full_name}</p>
+                  {item.is_online && <span className="w-1.5 h-1.5 rounded-full bg-turquoise shrink-0" />}
                 </div>
-              )}
-              <div className="flex items-center gap-4 mt-3 text-xs text-ink/50">
-                <span className="inline-flex items-center gap-1">
-                  <Star size={12} className="text-gold-dark" /> {item.rating_avg?.toFixed(1) ?? "0.0"} (
-                  {item.rating_count})
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <CheckCircle2 size={12} /> {item.completed_jobs_count} pekerjaan selesai
-                </span>
+                <div className="mt-2 flex items-center gap-3 text-sm text-ink/60">
+                  <span className="inline-flex items-center gap-1 font-semibold text-turquoise">
+                    <MapPin size={13} /> {formatDistance(item.distance_m, unit)}
+                  </span>
+                  {item.district && <span>{item.district}</span>}
+                </div>
+                <p className="mt-2 font-display text-lg font-semibold text-gold-dark">
+                  {item.job_is_nego ? "Nego" : formatRupiah(item.job_price)}
+                </p>
+                {item.skills && item.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {item.skills.map((s) => (
+                      <span key={s} className="text-xs bg-turquoise-light text-turquoise-dark rounded-full px-2 py-1">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-4 mt-3 text-xs text-ink/50">
+                  <span className="inline-flex items-center gap-1">
+                    <Star size={12} className="text-gold-dark" /> {item.rating_avg?.toFixed(1) ?? "0.0"} (
+                    {item.rating_count})
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 size={12} /> {item.completed_jobs_count} pekerjaan selesai
+                  </span>
+                </div>
               </div>
+              <span className="w-20 h-20 rounded-full bg-turquoise-light overflow-hidden shrink-0 flex items-center justify-center text-2xl font-semibold text-turquoise-dark">
+                {item.avatar_url ? (
+                  <img src={item.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  item.full_name?.[0]?.toUpperCase() ?? "?"
+                )}
+              </span>
             </Link>
           )
         )}
