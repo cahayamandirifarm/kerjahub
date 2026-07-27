@@ -29,7 +29,11 @@ const IN_APP_BROWSER_REDIRECT_SCRIPT = `
     if (isStandalone) return;
 
     // Tanda tangan UA webview Facebook/Instagram/Threads/TikTok/Messenger/Line.
-    var inAppPattern = /FBAN|FBAV|FB_IAB|FBSV|Instagram|Threads|TikTok|BytedanceWebview|musical_ly|Line\\//i;
+    // PENTING: app Threads TIDAK menulis "Threads" di UA-nya sama sekali --
+    // dia pakai nama kode internal Meta "Barcelona" (mis. "Barcelona 289.0...
+    // Android"), jadi kata "Threads" di sini tidak akan pernah cocok dan
+    // harus dideteksi lewat "Barcelona" ini.
+    var inAppPattern = /FBAN|FBAV|FB_IAB|FBSV|Instagram|Barcelona|TikTok|BytedanceWebview|musical_ly|Line\\//i;
     if (!inAppPattern.test(ua)) return;
 
     // Cegah redirect loop: kalau Chrome yang dibuka lewat Intent tadi
