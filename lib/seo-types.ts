@@ -2,6 +2,9 @@ export interface SeoCategory {
   id: string;
   name: string;
   slug: string;
+  job_category_match?: string[];
+  keyword_match?: string[];
+  remote_service?: boolean;
 }
 
 export interface SeoLocation {

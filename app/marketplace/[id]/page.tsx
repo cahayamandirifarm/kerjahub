@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import Navbar from "@/components/Navbar";
 import { notFound } from "next/navigation";
 import { DIGITAL_CATEGORIES } from "@/lib/types";
@@ -8,9 +10,52 @@ import WhatsAppInquiryButton from "@/components/WhatsAppInquiryButton";
 import Link from "next/link";
 import { CheckCircle2, Eye } from "lucide-react";
 import ViewTracker from "@/components/ViewTracker";
+import JsonLd from "@/components/seo/JsonLd";
+import { absoluteUrl, stripHtml } from "@/lib/seo-helpers";
 
 function formatRupiah(n: number) {
   return "Rp " + Number(n).toLocaleString("id-ID");
+}
+
+// SEO -- TIDAK mengubah query/tampilan/fungsi apa pun di bawah, cuma
+// menambah <head> metadata + JSON-LD. Semua field diturunkan langsung dari
+// kolom yang SUDAH ADA (title, description, category, price) -- tidak
+// perlu kolom baru, tidak perlu penjual isi apa pun secara manual, jadi
+// alur posting listing yang sudah ada di ListingForm SAMA SEKALI tidak
+// tersentuh.
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const supabase = createPublicClient();
+  const { data: listing } = await supabase
+    .from("digital_listings")
+    .select("title, description, price, cover_image, category")
+    .eq("id", params.id)
+    .single();
+
+  if (!listing) return { title: "Produk tidak ditemukan" };
+
+  const categoryLabel = DIGITAL_CATEGORIES.find((c) => c.value === listing.category)?.label || "";
+  const title = `${listing.title} — ${formatRupiah(listing.price)} | KerjaHub Marketplace`;
+  const description = stripHtml(listing.description, 155) || `${categoryLabel} tersedia di KerjaHub Marketplace.`;
+  const canonical = absoluteUrl(`/marketplace/${params.id}`);
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: listing.title,
+      description,
+      url: canonical,
+      type: "website",
+      images: listing.cover_image ? [{ url: listing.cover_image }] : undefined
+    },
+    twitter: {
+      card: listing.cover_image ? "summary_large_image" : "summary",
+      title: listing.title,
+      description,
+      images: listing.cover_image ? [listing.cover_image] : undefined
+    }
+  };
 }
 
 export default async function DigitalListingPage({ params }: { params: { id: string } }) {
@@ -26,8 +71,33 @@ export default async function DigitalListingPage({ params }: { params: { id: str
   const seller = (listing as any).profiles;
   const images = [listing.cover_image, ...(listing.gallery_images || [])];
 
+  const categoryLabel = DIGITAL_CATEGORIES.find((c) => c.value === listing.category)?.label || "";
+  const canonical = absoluteUrl(`/marketplace/${listing.id}`);
+  const schema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        name: listing.title,
+        description: stripHtml(listing.description, 300),
+        image: images.filter(Boolean),
+        category: categoryLabel,
+        offers: { "@type": "Offer", price: listing.price, priceCurrency: "IDR", availability: listing.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Beranda", item: absoluteUrl("/") },
+          { "@type": "ListItem", position: 2, name: "Marketplace", item: absoluteUrl("/marketplace") },
+          { "@type": "ListItem", position: 3, name: listing.title, item: canonical }
+        ]
+      }
+    ]
+  };
+
   return (
     <div className="min-h-screen pb-16">
+      <JsonLd data={schema} />
       <ViewTracker type="listing" id={listing.id} />
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">

@@ -29,7 +29,9 @@ async function getLandingPage(slug: string) {
   const supabase = createPublicClient();
   const { data } = await supabase
     .from("seo_landing_pages")
-    .select("*, category:seo_categories(id, name, slug), location:seo_locations(id, name, slug)")
+    .select(
+      "*, category:seo_categories(id, name, slug, job_category_match, keyword_match, remote_service), location:seo_locations(id, name, slug)"
+    )
     .eq("slug", slug)
     .single();
   return data as (SeoLandingPage & { category: any; location: any }) | null;
@@ -54,6 +56,65 @@ async function getRelated(ids: string[]) {
     .in("id", ids)
     .eq("status", "published");
   return (data as Pick<SeoLandingPage, "id" | "title" | "slug" | "h1">[]) || [];
+}
+
+// Postingan JASA (tabel jobs, bukan marketplace/digital_listings) yang
+// otomatis cocok dengan kategori SEO landing page ini -- dicocokkan lewat
+// job_category_match (kategori persis) ATAU keyword_match (judul ILIKE),
+// dan kalau landing page ini punya kota, prioritaskan job yang location-nya
+// (teks bebas) menyebut kota itu; kalau layanan ini remote_service, cukup
+// filter is_remote = true tanpa peduli kota.
+async function getRelatedJobs(category: any, location: any) {
+  if (!category) return [];
+  const categoryMatch: string[] = category.job_category_match || [];
+  const keywordMatch: string[] = category.keyword_match || [];
+  if (!categoryMatch.length && !keywordMatch.length) return [];
+
+  const supabase = createPublicClient();
+  // RPC security-definer (lihat migration 0087) -- WAJIB, bukan query tabel
+  // langsung: query langsung lewat client anon bikin embed profiles selalu
+  // null buat pengunjung yang belum login (RLS profiles = authenticated
+  // only), persis bug "foto profil tidak muncul" yang sudah kita perbaiki
+  // sebelumnya di migration 0086.
+  const { data } = await supabase.rpc("get_seo_related_jobs", {
+    p_category_match: categoryMatch,
+    p_keyword_match: keywordMatch,
+    p_location_name: location?.name || null,
+    p_remote: !!category.remote_service,
+    p_limit: 6
+  });
+  return (data as any[]) || [];
+}
+
+// "Lihat juga" -- kategori lain yang berhubungan (diseed lewat
+// seo_category_relations di migration 0087), tautkan ke halaman generic
+// (tanpa kota) kategori itu.
+async function getRelatedCategories(categoryId: string | null) {
+  if (!categoryId) return [];
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from("seo_category_relations")
+    .select("related:seo_categories!seo_category_relations_related_category_id_fkey(id, name, slug)")
+    .eq("category_id", categoryId)
+    .limit(6);
+  return (data || []).map((r: any) => r.related).filter(Boolean);
+}
+
+// Kota lain yang punya landing page untuk kategori yang sama (buat
+// "Related Cities" -- mis. dari halaman Bandung, tampilkan Jakarta,
+// Surabaya, dst untuk layanan yang sama).
+async function getSiblingCityPages(categoryId: string | null, currentSlug: string) {
+  if (!categoryId) return [];
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from("seo_landing_pages")
+    .select("slug, h1, location:seo_locations(name)")
+    .eq("category_id", categoryId)
+    .eq("status", "published")
+    .not("location_id", "is", null)
+    .neq("slug", currentSlug)
+    .limit(8);
+  return data || [];
 }
 
 // Halaman publik yang paling sering dikunjungi di-generate statis di build
@@ -123,10 +184,13 @@ export default async function SeoLandingPage({ params }: Params) {
     notFound();
   }
 
-  const [faqs, settings, related] = await Promise.all([
+  const [faqs, settings, related, relatedJobs, relatedCategories, siblingCities] = await Promise.all([
     getFaqs(lp.id),
     getSettings(),
-    getRelated(lp.related_ids || [])
+    getRelated(lp.related_ids || []),
+    getRelatedJobs(lp.category, lp.location),
+    getRelatedCategories(lp.category?.id || null),
+    getSiblingCityPages(lp.category?.id || null, lp.slug)
   ]);
 
   const schema = lp.schema_json && Object.keys(lp.schema_json).length > 0 ? lp.schema_json : buildAutoSchema(lp, faqs, settings);
@@ -134,7 +198,14 @@ export default async function SeoLandingPage({ params }: Params) {
   return (
     <>
       <JsonLd data={schema} />
-      <LandingPageView lp={lp} faqs={faqs} related={related} />
+      <LandingPageView
+        lp={lp}
+        faqs={faqs}
+        related={related}
+        relatedJobs={relatedJobs}
+        relatedCategories={relatedCategories}
+        siblingCities={siblingCities}
+      />
     </>
   );
 }
