@@ -20,7 +20,11 @@ import {
   Scale,
   Megaphone,
   MapPin,
-  Filter
+  Filter,
+  Globe,
+  FileText,
+  Link2,
+  SlidersHorizontal
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 import BantuanFloatingBubble from "@/components/admin/BantuanFloatingBubble";
@@ -47,6 +51,10 @@ const NAV = [
   { href: "/admin/ratings", label: "Rating & Ulasan", icon: Star },
   { href: "/admin/transactions", label: "Monitoring Transaksi", icon: Receipt },
   { href: "/admin/laporan-keuangan", label: "Laporan Keuangan", icon: Scale },
+  { href: "/admin/seo/landing-pages", label: "SEO — Landing Pages", icon: Globe },
+  { href: "/admin/seo/sitemap", label: "SEO — Sitemap", icon: FileText },
+  { href: "/admin/seo/redirect", label: "SEO — Redirect", icon: Link2 },
+  { href: "/admin/seo/settings", label: "SEO — Pengaturan", icon: SlidersHorizontal },
   { href: "/admin/settings", label: "Pengaturan Website", icon: Settings },
   { href: "/admin/audit-log", label: "Audit Log", icon: ShieldAlert }
 ];
