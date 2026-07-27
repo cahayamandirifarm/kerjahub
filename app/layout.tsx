@@ -19,6 +19,7 @@ import OnlineStatus from "@/components/OnlineStatus";
 import PWAInstall from "@/components/PWAInstall";
 import EnableNotificationsPrompt from "@/components/EnableNotificationsPrompt";
 import ReferralCapture from "@/components/ReferralCapture";
+import InAppBrowserRedirect from "@/components/InAppBrowserRedirect";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id">
       <body className={`${poppins.variable} font-body antialiased`}>
+        <InAppBrowserRedirect />
         <AuthProvider>
           <NotificationProvider>
             <ChatUnreadProvider>
